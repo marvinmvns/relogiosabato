@@ -1,0 +1,19 @@
+{
+  "name": "relogio-sabatinho-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Relógio Sabatinho: painel web de depuração, testes, pareamento e documentação (Web Bluetooth)",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "devDependencies": {
+    "vite": "8.3.5"
+  },
+  "dependencies": {
+    "@fontsource/big-shoulders-display": "5.3.0",
+    "@fontsource/onest": "5.3.0"
+  }
+}

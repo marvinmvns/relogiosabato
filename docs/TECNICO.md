@@ -19,11 +19,25 @@ Níveis de evidência usados aqui: **confirmado** (visto em captura ou no relóg
                 │ ui/          interface compartilhada (HTML/CSS/JS)                   │
                 └──────────────────────────────┬──────────────────────────────────────┘
                      adaptadores ble + store   │
-          ┌────────────────────────────────────┴───────────────────────────┐
-  apps/mobile (Android, Capacitor 8)                    apps/desktop (Electron 45)
-  ble: @capacitor-community/bluetooth-le                ble: Web Bluetooth do Chromium
-  store: @capacitor/filesystem + share                  store: arquivos via IPC (Node fs)
+          ┌─────────────────────────────┬──────┴─────────────────────┬──────────────────────┐
+  apps/mobile (Android e iOS,           apps/desktop (Electron 45)    apps/web (painel, navegador)
+  Capacitor 8)                          ble: Web Bluetooth do         ble: Web Bluetooth (lista
+  ble: @capacitor-community/            Chromium + lista própria      nativa do Chrome/Edge)
+  bluetooth-le                          store: arquivos via IPC       store: memória da aba,
+  store: @capacitor/filesystem + share  (Node fs)                     baixada como .jsonl
+  (Android: External; iOS: Documentos)
 ```
+
+`mountApp` aceita `extraTabs` (`{ id, label, icon, mount(section, ctx) }`). O painel web
+usa isso para acrescentar **Depurar** (`core/ui/debug.js`: GATT, decodificador e montador
+de quadros, leitor de `.jsonl`) e **Protocolo** (`core/ui/docs.js`, alimentado por
+`docs/comandos/comandos.json`). O montador de quadros só calcula bytes e checksum: o único
+caminho de envio continua sendo a aba Comandos, com as mesmas travas.
+
+Visual (`core/ui/style.css`): monitor de sinais vitais. Papel milimetrado de ECG no
+mostrador e nos gráficos, Big Shoulders Display para títulos e números grandes, Onest para
+o texto. Cores com significado fixo: vermelho = relógio, azul = app, âmbar = altera
+configuração, vinho = bloqueado, verde = passou.
 
 O núcleo não conhece a plataforma. Cada app fornece dois adaptadores:
 
@@ -180,16 +194,19 @@ bateria estava abaixo de 10%, então a causa não é certa. Por precaução `sen
 Requisitos: Node 22+ (testado com 24), JDK 21, Android SDK 36.
 
 ```sh
-cd core && npm test                                     # protocolo, medições, catálogo
+node --test core/test/*.test.js                         # protocolo, medições, catálogo, UI
 cd apps/mobile && npm ci && npm run android             # APK debug
 adb install -r apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
 cd apps/desktop && npm ci && npm start                  # roda no desktop
 npm run dist:linux | dist:win | dist:mac                # pacotes (cada um no seu sistema)
+cd apps/web && npm ci && npm run dev                    # painel em http://127.0.0.1:5173
+npm run build                                           # dist/ estático (servir em https)
+cd apps/mobile && npm run ios                           # sincroniza o projeto Xcode
 ```
 
 Versões fixadas (publicadas há pelo menos duas semanas na data do build): Capacitor
 8.6.0, bluetooth-le 8.3.0, filesystem 8.1.5, share 8.0.3, Vite 8.3.5, Electron 45.1.0,
-electron-builder 26.18.1, Bricolage Grotesque 5.3.0.
+electron-builder 26.18.1, @capacitor/ios 8.6.0, Onest 5.3.0, Big Shoulders Display 5.3.0.
 
 Notas de plataforma:
 
@@ -200,6 +217,12 @@ Notas de plataforma:
 - **Windows**: Web Bluetooth funciona com adaptador BLE e Windows 10+.
 - **macOS**: requer a permissão de Bluetooth (`NSBluetoothAlwaysUsageDescription` já
   declarada) e assinatura para distribuição.
+- **iOS**: o projeto Xcode está em `apps/mobile/ios` (Swift Package Manager, sem
+  CocoaPods). `Info.plist` já declara `NSBluetoothAlwaysUsageDescription` e expõe a pasta
+  Documentos no app Arquivos (`UIFileSharingEnabled`). Compilar e assinar exige macOS com
+  Xcode e uma conta Apple; nesta máquina (Linux) ele só foi gerado, não compilado.
+- **Painel web**: Chrome ou Edge (computador ou Android), em https ou localhost. Safari e
+  iOS não têm Web Bluetooth. O registro fica na memória da aba até "Exportar registro".
 - O relógio aceita **uma conexão por vez**: feche o Podsfine antes.
 - `npm audit` aponta vulnerabilidades moderadas na cadeia do electron-builder
   (ferramenta de build, não empacotada no app).

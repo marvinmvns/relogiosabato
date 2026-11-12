@@ -1,12 +1,18 @@
-// Adaptadores do Android (Capacitor): Bluetooth via @capacitor-community/bluetooth-le
+// Adaptadores do Android e do iOS (Capacitor): Bluetooth via @capacitor-community/bluetooth-le
 // e arquivos via @capacitor/filesystem + @capacitor/share.
 import { BleClient, numbersToDataView, dataViewToNumbers } from '@capacitor-community/bluetooth-le';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 import { hex } from '../../../core/protocol.js';
 
 const APP_ID = 'com.relogiosabatinho.app';
 const DIR = 'sessoes';
+export const isIOS = Capacitor.getPlatform() === 'ios';
+export const platformName = isIOS ? 'iOS' : 'Android';
+// Android: pasta do app no armazenamento externo (adb pull). iOS: Documentos, visível no app Arquivos.
+const BASE = isIOS ? Directory.Documents : Directory.External;
+const where = (p) => (isIOS ? `Arquivos > No meu iPhone > Relógio Sabatinho > ${p}` : `Android/data/${APP_ID}/files/${p}`);
 const toBytes = (v) => Uint8Array.from(dataViewToNumbers(v));
 
 export const ble = {
@@ -55,19 +61,19 @@ export function createStore() {
   return {
     async start(name) {
       try {
-        await Filesystem.mkdir({ path: DIR, directory: Directory.External, recursive: true });
+        await Filesystem.mkdir({ path: DIR, directory: BASE, recursive: true });
       } catch (_e) { /* já existe */ }
       path = `${DIR}/${name}.jsonl`;
-      await Filesystem.writeFile({ path, directory: Directory.External, data: '', encoding: Encoding.UTF8 });
-      return `Android/data/${APP_ID}/files/${path}`;
+      await Filesystem.writeFile({ path, directory: BASE, data: '', encoding: Encoding.UTF8 });
+      return where(path);
     },
-    append: (text) => Filesystem.appendFile({ path, directory: Directory.External, data: text, encoding: Encoding.UTF8 }),
+    append: (text) => Filesystem.appendFile({ path, directory: BASE, data: text, encoding: Encoding.UTF8 }),
     async writeFile(name, text) {
-      await Filesystem.writeFile({ path: `${DIR}/${name}`, directory: Directory.External, data: text, encoding: Encoding.UTF8 });
-      return `Android/data/${APP_ID}/files/${DIR}/${name}`;
+      await Filesystem.writeFile({ path: `${DIR}/${name}`, directory: BASE, data: text, encoding: Encoding.UTF8 });
+      return where(`${DIR}/${name}`);
     },
     async share() {
-      const { uri } = await Filesystem.getUri({ path, directory: Directory.External });
+      const { uri } = await Filesystem.getUri({ path, directory: BASE });
       await Share.share({ title: 'Registro do Relógio Sabatinho', url: uri, dialogTitle: 'Exportar registro' });
     },
   };

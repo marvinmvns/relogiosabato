@@ -24,8 +24,9 @@ medem e registram tudo, e a documentação técnica completa.
 ```
 core/          núcleo compartilhado (JS puro, testado): protocolo, catálogo, medições,
                sessão, registro, "Testar tudo" e a interface
-apps/mobile/   app Android (Capacitor 8)            → Relógio Sabatinho.apk
+apps/mobile/   app Android e iOS (Capacitor 8)      → Relógio Sabatinho.apk / projeto Xcode
 apps/desktop/  app Linux, Windows e macOS (Electron 45)
+apps/web/      painel web: depuração, testes, pareamento e documentação (Web Bluetooth)
 tools/         ferramentas Python (BLE com Bleak, captura HCI, decodificador DF/FD)
                e geradores do catálogo e do COMANDOS.md
 docs/          documentação (comece por TECNICO.md)
@@ -35,9 +36,13 @@ private/       APK, código descompilado, capturas, sessões (ignorado pelo git)
 
 ## Apps
 
-Os dois apps têm as mesmas abas:
+Todos usam a mesma interface (`core/ui`), com visual de monitor de sinais vitais: papel
+milimetrado de ECG, números grandes e cores clínicas (vermelho = o que o relógio envia,
+azul = o que o app envia, âmbar = muda configuração, vinho = bloqueado). Tema claro e
+escuro seguem o sistema. Abas:
 
-- **Relógio:** conectar, mostrador com bateria e firmware, o que o relógio informou e os recursos.
+- **Relógio:** conectar, bateria, firmware e chip. A tira de ECG pulsa a cada pacote:
+  pico para cima quando o relógio fala, traço para baixo quando o app envia.
 - **Medir:** frequência cardíaca sob demanda (valor ao vivo, série, mínimo, média e
   máximo), atividade de hoje, passos por hora e histórico de FC.
 - **Comandos:** os 209 comandos com busca e grupos. Cada um mostra o payload, a resposta
@@ -46,12 +51,22 @@ Os dois apps têm as mesmas abas:
   relatório em Markdown e JSON.
 - **Registro:** cada pacote bruto, cada quadro decodificado, cada envio, ACK, medição e
   evento, gravado em JSONL por sessão.
+- **Depurar** (painel web): serviços GATT do aparelho, decodificador de quadros em hex,
+  montador de quadros (só calcula, não envia) e leitor de registros `.jsonl`.
+- **Protocolo** (painel web): os 211 comandos enviados, as 101 respostas e os 146 bits
+  de recursos, pesquisáveis, a partir de `docs/comandos/comandos.json`.
 
 ```sh
-cd core && npm test                                   # 34 testes do núcleo
+node --test core/test/*.test.js                       # 38 testes do núcleo
 cd apps/mobile && npm ci && npm run android           # APK debug
+cd apps/mobile && npm ci && npm run ios               # projeto Xcode (compilar exige macOS)
 cd apps/desktop && npm ci && npm start                # desktop
+cd apps/web && npm ci && npm run dev                  # painel em http://127.0.0.1:5173
 ```
+
+O painel web precisa de Chrome ou Edge (computador ou Android) e de https ou localhost;
+Safari e iOS não têm Web Bluetooth. No iOS, use o app Capacitor: o projeto está em
+`apps/mobile/ios`, mas compilar e assinar exige macOS com Xcode e uma conta Apple.
 
 Detalhes de compilação e plataformas: [docs/TECNICO.md](docs/TECNICO.md).
 

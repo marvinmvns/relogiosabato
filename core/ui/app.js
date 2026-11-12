@@ -39,39 +39,44 @@ const h = (html) => {
   return t.content.firstElementChild;
 };
 
-export function mountApp({ root, ble, store, platform, commands, responses }) {
+export function mountApp({ root, ble, store, platform, commands, responses, extraTabs = [] }) {
+  const TABS = [
+    ...['relogio', 'medir', 'comandos', 'testes', 'registro'].map((id) => ({ id, label: { relogio: 'Relógio', medir: 'Medir', comandos: 'Comandos', testes: 'Testes', registro: 'Registro' }[id], icon: ICONS[id] })),
+    ...extraTabs,
+  ];
   const ui = {};
   const state = { logFilter: 'tudo', logSearch: '', group: 'todos', query: '', running: null };
 
   root.innerHTML = `
     <div class="shell">
       <header class="topbar">
-        <h1 class="brand">Relógio Sabatinho<span>laboratório do TF37 Pro · ${esc(platform.name)}</span></h1>
+        <h1 class="brand">Relógio Sabatinho<span>TF37 Pro no ${esc(platform.name)}</span></h1>
         <span class="pill" id="pill" data-state="off">desconectado</span>
       </header>
 
-      <nav class="tabs" role="tablist">
-        ${['relogio', 'medir', 'comandos', 'testes', 'registro'].map((v, i) => `
-          <button role="tab" data-view="${v}" aria-selected="${i === 0}">${ICONS[v]}<span>${{ relogio: 'Relógio', medir: 'Medir', comandos: 'Comandos', testes: 'Testes', registro: 'Registro' }[v]}</span></button>`).join('')}
+      <nav class="tabs" role="tablist" style="--tab-count:${TABS.length}">
+        ${TABS.map((t, i) => `
+          <button role="tab" data-view="${t.id}" aria-selected="${i === 0}">${t.icon}<span>${esc(t.label)}</span></button>`).join('')}
       </nav>
 
       <main>
         <section class="view active" data-view="relogio">
           <p class="status-line" id="status">Conecte o relógio para começar.</p>
-          <div class="face">
-            <div class="dial" id="dial" aria-label="Estado do relógio">
-              <svg class="ring" viewBox="0 0 168 168" aria-hidden="true">
-                <circle class="track" cx="84" cy="84" r="76" fill="none" stroke-width="6"/>
-                <circle class="level" id="level" cx="84" cy="84" r="76" fill="none" stroke-width="6" stroke-linecap="round" stroke-dasharray="477.5" stroke-dashoffset="477.5"/>
-              </svg>
-              <div><div class="big" id="dialBig">—</div><div class="small" id="dialSmall">sem conexão</div></div>
-              <i class="pulse" id="pulse"></i>
+          <div class="monitor" id="dial">
+            <div class="readout">
+              <span class="vital-label">Bateria</span>
+              <span class="big" id="dialBig">—</span>
+              <span class="batt" aria-hidden="true"><i id="level"></i></span>
+              <span class="small" id="dialSmall">sem conexão</span>
             </div>
-            <div class="face-facts">
-              <div><b>Firmware</b><span id="fFirmware">—</span></div>
-              <div><b>Chip</b><span id="fChip">—</span></div>
-              <div><b>Pacotes</b><span id="fPackets">0 recebidos · 0 enviados</span></div>
-            </div>
+            <svg class="ecg" viewBox="0 0 300 80" preserveAspectRatio="none" role="img" aria-label="Traçado de pacotes: picos para cima são o relógio falando, para baixo são o app">
+              <path id="ecgPath" d="M0 40H300"/>
+            </svg>
+            <dl class="monitor-facts">
+              <div><dt>Firmware</dt><dd id="fFirmware">—</dd></div>
+              <div><dt>Chip</dt><dd id="fChip">—</dd></div>
+              <div><dt>Pacotes</dt><dd id="fPackets">0 recebidos, 0 enviados</dd></div>
+            </dl>
           </div>
           <div class="block">
             <div class="actions">
@@ -117,6 +122,7 @@ export function mountApp({ root, ble, store, platform, commands, responses }) {
         </section>
 
         <section class="view" data-view="registro" id="logView"></section>
+        ${extraTabs.map((t) => `<section class="view" data-view="${t.id}"></section>`).join('')}
       </main>
 
       <aside class="side-log" id="sideLog"></aside>
@@ -242,12 +248,13 @@ export function mountApp({ root, ble, store, platform, commands, responses }) {
     const pct = parseInt(info.bateria ?? info.bateria2a19, 10);
     const level = $('#level');
     if (Number.isFinite(pct)) {
-      level.style.strokeDashoffset = String(477.5 * (1 - Math.max(0, Math.min(100, pct)) / 100));
+      level.style.width = `${Math.max(0, Math.min(100, pct))}%`;
       level.dataset.low = pct <= 15 ? '1' : '0';
+      $('#dial').dataset.batt = String(pct);
       $('#dialBig').textContent = `${pct}%`;
     }
     const fw = (info.firmware || '').match(/V\d+(\.\d+)*/)?.[0];
-    $('#dialSmall').textContent = [fw, session.connected ? 'conectado' : 'sem conexão'].filter(Boolean).join(' · ');
+    $('#dialSmall').textContent = [fw, session.connected ? 'conectado' : 'sem conexão'].filter(Boolean).join(', ');
     $('#fFirmware').textContent = info.firmware || '—';
     $('#fChip').textContent = info.chip || '—';
   }
@@ -276,12 +283,27 @@ export function mountApp({ root, ble, store, platform, commands, responses }) {
     setStatus(e.detail.connected ? `Conectado a ${e.detail.device.name || e.detail.device.id}.` : 'Relógio desconectado.', e.detail.connected ? '' : 'err');
     updateDial();
   });
+  // Traçado tipo ECG: cada pacote do relógio desenha um batimento para cima,
+  // cada envio do app um traço curto para baixo. Sem pacotes, a linha fica reta.
+  const ecg = { pts: new Array(120).fill(0), queue: [], timer: null };
+  const BEAT_RX = [1, 2, 1, 0, -3, 26, -12, 0, 2, 4, 5, 3, 1];
+  const BEAT_TX = [0, -4, -9, -4, 0];
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const drawEcg = () => {
+    const step = 300 / (ecg.pts.length - 1);
+    $('#ecgPath').setAttribute('d', ecg.pts.map((v, i) => `${i ? 'L' : 'M'}${(i * step).toFixed(1)} ${(42 - v).toFixed(1)}`).join(''));
+  };
+  const tickEcg = () => {
+    ecg.pts.shift();
+    ecg.pts.push(ecg.queue.shift() ?? 0);
+    drawEcg();
+    if (!ecg.queue.length && ecg.pts.every((v) => v === 0)) { clearInterval(ecg.timer); ecg.timer = null; }
+  };
   session.addEventListener('packet', (e) => {
-    const p = $('#pulse');
-    p.className = `pulse ${e.detail.dir}`;
-    void p.offsetWidth; // reinicia a animação
-    p.classList.add('go');
-    $('#fPackets').textContent = `${session.counters.rx} recebidos · ${session.counters.tx} enviados${session.counters.invalid ? ` · ${session.counters.invalid} inválidos` : ''}`;
+    if (ecg.queue.length < 40) ecg.queue.push(...(e.detail.dir === 'tx' ? BEAT_TX : BEAT_RX), 0, 0);
+    if (reduceMotion) { while (ecg.queue.length) tickEcg(); } else if (!ecg.timer) ecg.timer = setInterval(tickEcg, 45);
+    $('#dial').dataset.live = e.detail.dir;
+    $('#fPackets').textContent = `${session.counters.rx} recebidos, ${session.counters.tx} enviados${session.counters.invalid ? `, ${session.counters.invalid} inválidos` : ''}`;
   });
 
   $('#connect').onclick = async () => {
@@ -480,6 +502,8 @@ export function mountApp({ root, ble, store, platform, commands, responses }) {
   recorder.start({ platform: platform.name, userAgent: navigator.userAgent, commands: commands.length }).then((loc) => {
     logPanel.querySelector('#fileLoc').textContent = loc ? `Arquivo da sessão: ${loc}` : 'Registro apenas na tela (sem arquivo).';
   });
+
+  for (const t of extraTabs) t.mount(root.querySelector(`main > .view[data-view="${t.id}"]`), { session, recorder, commands, responses, platform });
 
   return { session, recorder };
 }

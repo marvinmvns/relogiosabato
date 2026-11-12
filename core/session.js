@@ -63,6 +63,7 @@ export class Session extends EventTarget {
     this.version = 0;
 
     const services = await this.ble.getServices(device.id);
+    this.services = services;
     await this.recorder.add({
       type: 'gatt',
       summary: `${services.length} serviços`,

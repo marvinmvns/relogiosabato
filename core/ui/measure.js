@@ -21,18 +21,16 @@ export function createMeasure({ root, session, recorder }) {
     <div class="block">
       <h2>Frequência cardíaca</h2>
       <p>Coloque o relógio no pulso, bem justo, e fique parado. A medição para sozinha em ${AUTO_STOP_S} s.</p>
-      <div class="face" style="margin:4px 0 8px">
-        <div class="dial" style="width:140px;height:140px">
-          <div><div class="big" id="mBpm">—</div><div class="small" id="mBpmUnit">bpm</div></div>
-        </div>
-        <div class="face-facts">
-          <div><b>Estado</b><span id="mState">parado</span></div>
-          <div><b>Mín · média · máx</b><span id="mStats">—</span></div>
-          <div><b>Leituras</b><span id="mCount">0</span></div>
-        </div>
+      <div class="vital">
+        <div class="vital-num"><span class="big" id="mBpm">—</span><span class="small" id="mBpmUnit">bpm</span></div>
+        <dl class="monitor-facts">
+          <div><dt>Estado</dt><dd id="mState">parado</dd></div>
+          <div><dt>Mínimo, média e máximo</dt><dd id="mStats">—</dd></div>
+          <div><dt>Leituras</dt><dd id="mCount">0</dd></div>
+        </dl>
       </div>
-      <svg id="mSpark" viewBox="0 0 300 70" width="100%" height="70" role="img" aria-label="Série de batimentos" style="display:block;margin-bottom:10px">
-        <polyline fill="none" stroke="var(--watch)" stroke-width="2.5" stroke-linejoin="round" points=""/>
+      <svg id="mSpark" class="strip" viewBox="0 0 300 70" width="100%" height="70" role="img" aria-label="Série de batimentos" preserveAspectRatio="none">
+        <polyline fill="none" stroke="var(--watch)" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke" points=""/>
       </svg>
       <div class="actions">
         <button class="btn watch" id="mStart" disabled>Medir agora</button>
@@ -145,6 +143,7 @@ export function createMeasure({ root, session, recorder }) {
       if (st.measuring && (st.measuring.liveType === null || st.measuring.liveType === live.type)) {
         st.series.push({ t: Date.now() - st.startedAt, value: live.value });
         $('#mBpm').textContent = String(live.value);
+        $('#mBpm').dataset.v = '1';
         $('#mState').textContent = 'medindo';
         drawSpark();
         showStats();

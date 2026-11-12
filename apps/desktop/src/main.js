@@ -1,7 +1,8 @@
-import '@fontsource/bricolage-grotesque/400.css';
-import '@fontsource/bricolage-grotesque/600.css';
-import '@fontsource/bricolage-grotesque/700.css';
-import '@fontsource/bricolage-grotesque/800.css';
+import '@fontsource/onest/400.css';
+import '@fontsource/onest/500.css';
+import '@fontsource/onest/600.css';
+import '@fontsource/onest/700.css';
+import '@fontsource/big-shoulders-display/800';
 import '../../../core/ui/style.css';
 import { mountApp } from '../../../core/ui/app.js';
 import { COMMANDS, RESPONSES } from '../../../core/commands.js';

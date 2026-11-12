@@ -2,7 +2,9 @@
   "appId": "com.relogiosabatinho.app",
   "appName": "Relógio Sabatinho",
   "webDir": "dist",
-  "android": { "backgroundColor": "#12142a" },
+  "android": {
+    "backgroundColor": "#eef3f1"
+  },
   "plugins": {
     "BluetoothLe": {
       "displayStrings": {
@@ -12,5 +14,9 @@
         "noDeviceFound": "Nenhum aparelho encontrado"
       }
     }
+  },
+  "ios": {
+    "backgroundColor": "#eef3f1",
+    "contentInset": "never"
   }
 }
