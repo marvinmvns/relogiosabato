@@ -4,6 +4,7 @@
 // implementados à mão abaixo; os demais ficam documentados mas não enviáveis.
 import { CATALOG } from './catalog.generated.js';
 import { encodeTime } from './protocol.js';
+import { parseHrLimits } from './settings.js';
 import {
   decodeToday, decodeHourly, decodeHrHistory, decodeLive, decodeStatus, decodeDate2,
 } from './measure.js';
@@ -11,6 +12,14 @@ import {
 const utf8 = (s) => Array.from(new TextEncoder().encode(String(s ?? '')));
 const ascii = (s) => Array.from(String(s ?? '')).map((c) => c.charCodeAt(0) & 0x7f);
 const u16 = (n) => [(n >> 8) & 0xff, n & 0xff];
+const AUTO_PARAMS = [
+  { name: 'ligado', type: 'u8', label: 'Ligado (1) ou desligado (0)', default: 1, min: 0, max: 1 },
+  { name: 'intervalo', type: 'u16', label: 'Intervalo (minutos)', default: 60, min: 1, max: 1440 },
+  { name: 'inicio', type: 'u16', label: 'Início (minutos do dia)', default: 0, min: 0, max: 1439 },
+  { name: 'fim', type: 'u16', label: 'Fim (minutos do dia)', default: 1439, min: 0, max: 1439 },
+];
+const encodeAuto = (p) => [p.ligado & 0xff, 0, ...u16(p.intervalo), ...u16(p.inicio), ...u16(p.fim)];
+const hexBytes = (t) => { const c = String(t ?? '').replace(/0x/gi, '').replace(/[^0-9a-f]/gi, ''); if (c.length % 2) throw new Error('hex com número ímpar de dígitos'); return (c.match(/../g) || []).map((b) => parseInt(b, 16)); };
 const u32 = (n) => [(n >>> 24) & 0xff, (n >>> 16) & 0xff, (n >>> 8) & 0xff, n & 0xff];
 const text = (b) => new TextDecoder().decode(Uint8Array.from(b));
 
@@ -147,7 +156,7 @@ const CUSTOM = {
       { name: 'inicio', type: 'u16', label: 'Início (minutos do dia)', default: 0, min: 0, max: 1439 },
       { name: 'fim', type: 'u16', label: 'Fim (minutos do dia)', default: 1439, min: 0, max: 1439 },
     ],
-    encode: (p) => [p.ligado & 0xff, 0, ...u16(p.intervalo), ...u16(p.inicio), ...u16(p.fim)],
+    encode: encodeAuto,
     note: 'Liga, um byte 0, intervalo em minutos e janela em minutos do dia. Igual à etiqueta 6 de 02/06.',
   },
   sendSedentaryRemind: {
@@ -171,6 +180,81 @@ const CUSTOM = {
     ],
     encode: (p) => [p.ligado & 0xff, ...u16(p.inicio), ...u16(p.fim)],
     note: 'Liga e janela do não perturbe em minutos do dia. Igual à etiqueta 12 de 02/06.',
+  },
+  sendBoAutoTestSetting: {
+    params: AUTO_PARAMS,
+    encode: encodeAuto,
+    note: 'Medição automática de oxigênio: liga, 0, intervalo em minutos e janela em minutos do dia. Igual à etiqueta 0x11 de 02/06.',
+  },
+  sendPrAutoTestSetting: {
+    params: AUTO_PARAMS,
+    encode: encodeAuto,
+    note: 'Medição automática de estresse: liga, 0, intervalo em minutos e janela em minutos do dia. Igual à etiqueta 0x19 de 02/06.',
+  },
+  sendBPAutoTestSetting: {
+    params: AUTO_PARAMS,
+    encode: encodeAuto,
+    note: 'Medição automática de pressão arterial: liga, 0, intervalo em minutos e janela em minutos do dia. Igual à etiqueta 0x1A de 02/06.',
+  },
+  sendTemperAutoTestSetting: {
+    params: AUTO_PARAMS,
+    encode: encodeAuto,
+    note: 'Medição automática de temperatura: liga, 0, intervalo em minutos e janela em minutos do dia. Igual à etiqueta 0x1C de 02/06.',
+  },
+  sendHrvAutoTestSetting: {
+    params: AUTO_PARAMS,
+    encode: encodeAuto,
+    note: 'Medição automática de HRV: liga, 0, intervalo em minutos e janela em minutos do dia. Igual à etiqueta 0x1D de 02/06.',
+  },
+  sendScientSleepTestSetting: {
+    params: [{ name: 'ligado', type: 'u8', label: 'Ligado (1) ou desligado (0)', default: 1, min: 0, max: 1 }],
+    encode: (p) => [p.ligado & 0xff],
+    note: 'Sono científico: 1 byte liga/desliga. Igual à etiqueta 0x1B de 02/06.',
+  },
+  sendHrAutoHigLowFla: {
+    params: [
+      { name: 'altoLigado', type: 'u8', label: 'Alerta de FC alta (1/0)', default: 0, min: 0, max: 1 },
+      { name: 'alto', type: 'u8', label: 'Limite alto (bpm)', default: 120, min: 0, max: 255 },
+      { name: 'baixoLigado', type: 'u8', label: 'Alerta de FC baixa (1/0)', default: 0, min: 0, max: 1 },
+      { name: 'baixo', type: 'u8', label: 'Limite baixo (bpm)', default: 45, min: 0, max: 255 },
+    ],
+    encode: (p) => [p.altoLigado & 0xff, p.alto & 0xff, p.baixoLigado & 0xff, p.baixo & 0xff],
+    note: 'Liga e valor do alerta de FC alta e baixa. Os valores aceitos vêm de 03/08 → 03/09 (faixa e passo).',
+  },
+  settingGazeDistance: {
+    params: [{ name: 'dados', type: 'string', label: 'Payload em hex (mesmo formato da leitura 02/3C)', default: '00 00 00 3c 08 00 16 00' }],
+    encode: (p) => hexBytes(p.dados),
+    note: 'Lembrete de olhar longe: o payload tem exatamente o formato da resposta de 02/3C; a suíte regrava o que leu.',
+  },
+  settingFitnessReminder: {
+    params: [{ name: 'dados', type: 'string', label: 'Payload em hex (mesmo formato da leitura 02/3E)', default: '00 00 00 00 08 00' }],
+    encode: (p) => hexBytes(p.dados),
+    note: 'Lembrete de exercício: o payload tem exatamente o formato da resposta de 02/3E; a suíte regrava o que leu.',
+  },
+  settingReadingReminder: {
+    params: [{ name: 'dados', type: 'string', label: 'Payload em hex (mesmo formato da leitura 02/40)', default: '00 00 00 00 08 00' }],
+    encode: (p) => hexBytes(p.dados),
+    note: 'Lembrete de leitura: o payload tem exatamente o formato da resposta de 02/40; a suíte regrava o que leu.',
+  },
+  settingTravelReminder: {
+    params: [{ name: 'dados', type: 'string', label: 'Payload em hex (mesmo formato da leitura 02/42)', default: '00 00 00 00 08 00' }],
+    encode: (p) => hexBytes(p.dados),
+    note: 'Lembrete de viagem: o payload tem exatamente o formato da resposta de 02/42; a suíte regrava o que leu.',
+  },
+  settingHandWash: {
+    params: [{ name: 'dados', type: 'string', label: 'Payload em hex (mesmo formato da leitura 02/4A)', default: '00 00 00 1e 08 00 16 00' }],
+    encode: (p) => hexBytes(p.dados),
+    note: 'Lembrete de lavar as mãos: o payload tem exatamente o formato da resposta de 02/4A; a suíte regrava o que leu.',
+  },
+  settingDrinkWater: {
+    params: [{ name: 'dados', type: 'string', label: 'Payload em hex (mesmo formato da leitura 22/00)', default: '00 00 01 08 16 1f' }],
+    encode: (p) => hexBytes(p.dados),
+    note: 'Lembrete de beber água: o payload tem exatamente o formato da resposta de 22/00; a suíte regrava o que leu.',
+  },
+  setAlarm: {
+    params: [{ name: 'dados', type: 'string', label: 'Payload em hex (mesmo formato da leitura 06/08)', default: 'a0 00' }],
+    encode: (p) => hexBytes(p.dados),
+    note: 'Alarmes (lista inteira: máximo/quantidade, toques e 5 bytes por alarme): o payload tem exatamente o formato da resposta de 06/08; a suíte regrava o que leu.',
   },
   setStepTarget: {
     params: [{ name: 'passos', type: 'u32', label: 'Meta de passos', default: 8000, min: 0, max: 100000 }],
@@ -331,7 +415,7 @@ export const RESPONSES = [
   { cmd: 0x01, key: 0x02, name: 'sincronização: início', description: 'O relógio começou a enviar dados.', parse: (p) => ({ valor: p[0] }) },
   { cmd: 0x01, key: 0x03, name: 'sincronização: fim', description: 'O relógio terminou de enviar dados.', parse: (p) => ({ valor: p[0] }) },
   { cmd: 0x03, key: 0x00, name: 'histórico de FC', description: 'data(2) qtd(2) + registros de 8 bytes.', parse: (p) => decodeHrHistory(p) },
-  { cmd: 0x03, key: 0x09, name: 'limites de alerta de FC', description: 'Alto: liga, máx, mín, passo, atual; baixo: idem.', parse: (p) => ({ alto: { ligado: p[0], atual: p[4] }, baixo: { ligado: p[5], atual: p[9] } }) },
+  { cmd: 0x03, key: 0x09, name: 'limites de alerta de FC', description: 'Alto: liga, máx, mín, passo, atual; baixo: idem.', parse: (p) => parseHrLimits(p) },
   { cmd: 0x03, key: 0x0f, name: 'estado da medição de FC', description: '1 medindo, 0 parado.', parse: (p) => decodeStatus(0x0f, p) },
   { cmd: 0x03, key: 0x12, name: 'estado da medição de SpO2', description: '1 medindo, 0 parado.', parse: (p) => decodeStatus(0x12, p) },
   { cmd: 0x03, key: 0x15, name: 'estado da medição de pressão', description: '1 medindo, 0 parado.', parse: (p) => decodeStatus(0x15, p) },

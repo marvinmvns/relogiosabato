@@ -46,3 +46,32 @@ test('regravação de sono, FC automática e sedentarismo reproduz os bytes lido
   assert.deepEqual(payload('sendHrAutoTestSetting'), [0x01, 0x00, 0x00, 0x1e, 0x00, 0x00, 0x05, 0x9f]);
   assert.deepEqual(payload('sendSedentaryRemind'), [0x00, 0x00, 0x00, 0x0f, 0x2d, 0x08, 0x16, 0xf8]);
 });
+
+test('medições automáticas e sono científico regravam os bytes das etiquetas 0x19, 0x1A e 0x1B', () => {
+  const s = parseSettings(real);
+  assert.deepEqual(s.estresseAutomatico, { ligado: 1, intervaloMin: 60, inicio: '00:00', fim: '23:59' });
+  assert.deepEqual(s.pressaoAutomatica, { ligado: 1, intervaloMin: 60, inicio: '00:00', fim: '23:59' });
+  assert.equal(s.sonoCientifico, 1);
+  const plan = writeBackPlan(s);
+  const payload = (id) => { const p = plan.find((x) => x.id === id); return commandById(id).encode(p.params); };
+  assert.deepEqual(payload('sendPrAutoTestSetting'), [0x01, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x05, 0x9f]);
+  assert.deepEqual(payload('sendBPAutoTestSetting'), [0x01, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x05, 0x9f]);
+  assert.deepEqual(payload('sendScientSleepTestSetting'), [0x01]);
+});
+
+test('limites de FC (03/09 real) regravam com 03/0A', async () => {
+  const { parseHrLimits } = await import('../settings.js');
+  const lim = parseHrLimits(Uint8Array.from([0x00, 0x96, 0x6e, 0x0a, 0x78, 0x00, 0x32, 0x28, 0x05, 0x2d]));
+  assert.deepEqual(lim.alto, { ligado: 0, max: 150, min: 110, passo: 10, atual: 120 });
+  assert.deepEqual(lim.baixo, { ligado: 0, max: 50, min: 40, passo: 5, atual: 45 });
+  const step = writeBackPlan({ limitesFc: lim }).find((x) => x.id === 'sendHrAutoHigLowFla');
+  assert.deepEqual(commandById('sendHrAutoHigLowFla').encode(step.params), [0x00, 0x78, 0x00, 0x2d]);
+});
+
+test('alarmes e lembretes regravam exatamente o payload lido', () => {
+  const plan = writeBackPlan({ leituras: { setAlarm: 'a0 00', settingGazeDistance: '00 00 00 3c 08 00 16 00', settingDrinkWater: null } });
+  const by = Object.fromEntries(plan.map((p) => [p.id, commandById(p.id).encode(p.params)]));
+  assert.deepEqual(by.setAlarm, [0xa0, 0x00]);
+  assert.deepEqual(by.settingGazeDistance, [0, 0, 0, 0x3c, 8, 0, 0x16, 0]);
+  assert.equal(by.settingDrinkWater, undefined); // sem leitura, não regrava
+});

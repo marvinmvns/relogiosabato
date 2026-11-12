@@ -17,7 +17,7 @@ test('configurações só entram com a opção ligada', () => {
   const off = buildPlan(COMMANDS).filter((i) => !i.skip);
   const on = buildPlan(COMMANDS, { includeConfig: true }).filter((i) => !i.skip);
   assert.ok(off.every((i) => i.command.risk === 'seguro' || i.writeBack));
-  assert.deepEqual(off.filter((i) => i.writeBack).map((i) => i.command.id).sort(), ['handBright', 'sendHrAutoTestSetting', 'sendSedentaryRemind', 'sendSleepSetting', 'sendWearing', 'setDND', 'setLanguage', 'setRealtimeHealth', 'setRealtimeSport', 'setStepTarget']);
+  assert.deepEqual(off.filter((i) => i.writeBack).map((i) => i.command.id).sort(), ['handBright', 'sendBPAutoTestSetting', 'sendBoAutoTestSetting', 'sendHrAutoHigLowFla', 'sendHrAutoTestSetting', 'sendHrvAutoTestSetting', 'sendPrAutoTestSetting', 'sendScientSleepTestSetting', 'sendSedentaryRemind', 'sendSleepSetting', 'sendTemperAutoTestSetting', 'sendWearing', 'setAlarm', 'setDND', 'setLanguage', 'setRealtimeHealth', 'setRealtimeSport', 'setStepTarget', 'settingDrinkWater', 'settingFitnessReminder', 'settingGazeDistance', 'settingHandWash', 'settingReadingReminder', 'settingTravelReminder']);
   assert.ok(on.length > off.length);
 });
 
@@ -58,3 +58,9 @@ test('medição: ACK atrasado conta, mas não o ACK do desligar', async () => {
   const { results } = await runSuite(fake, plan.map((i) => ({ ...i, command: { ...i.command } })), {});
   assert.equal(results[0].status, 'sem resposta');
 }, { timeout: 30000 });
+
+test('alarmes e lembretes ficam em regravação mesmo com configurações ligadas', () => {
+  const on = buildPlan(COMMANDS, { includeConfig: true });
+  for (const id of ['setAlarm', 'settingDrinkWater', 'settingHandWash']) assert.equal(on.find((i) => i.command.id === id).writeBack, true, id);
+  assert.notEqual(on.find((i) => i.command.id === 'setLanguage').writeBack, true);
+});

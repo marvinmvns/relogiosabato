@@ -215,6 +215,37 @@ mandou `03/0F` = 1 (medindo) e `03/0F` = 2 (falhou: fora do pulso). A suíte ago
 ACK atrasado dentro da janela de medição, desde que chegue antes do "desligar" (que usa o
 mesmo cmd/key).
 
+### Mais regravações (2026-11-12, tarde)
+
+Além de 02/06, a suíte agora lê antes de começar e regrava depois:
+
+| Leitura | Gravação | Formato | Valor real no TF37 Pro |
+|---|---|---|---|
+| 02/06 etiquetas `19`, `1A`, `1B` | 02/43 estresse, 02/4B pressão, 02/4C sono científico | liga, 0, intervalo u16, início u16, fim u16 (o sono científico tem 1 byte) | ligados, a cada 60 min, 00:00–23:59 |
+| 03/08 → 03/09 | 03/0A limites de FC | 03/09: liga, máx, mín, passo, atual (alto e baixo); 03/0A: liga e atual de cada | alto desligado em 120 (110–150), baixo desligado em 45 (40–50) |
+| 02/3C, 3E, 40, 42, 4A | 02/3B, 3D, 3F, 41, 49 lembretes | resposta = payload de gravação (`NotifyWriteUtils`) | todos desligados |
+| 22/00 | 02/21 água | resposta = payload de gravação | desligado |
+| 06/08 | 02/10 alarmes | resposta = payload de gravação (5 bytes por alarme) | `a0 00`: máximo 10, nenhum alarme |
+
+Alarmes e lembretes são **sempre** regravados com o valor lido, mesmo com "incluir
+configurações", para nunca apagar o que a pessoa configurou. Se a leitura não vier, o
+comando é pulado. Oxigênio (`11`), temperatura (`1C`) e HRV (`1D`) automáticos não aparecem
+em 02/06 neste relógio, então ficam pulados. Remédios (02/32) e ciclo menstrual (19/01)
+ficaram de fora: o primeiro byte que o app grava em 02/32 é sempre 1, mas o relógio informa
+0 nesse campo, e o formato da leitura menstrual não está claro.
+
+**Incidente das unidades.** A execução com configurações de 15:13 enviou `setUnit 01 01`.
+Naquela versão, o leitor de 02/06 ainda parava na etiqueta `0x33` e não conhecia as
+unidades, então não as restaurou. A leitura das 15:52 mostrou `0d 01 01`. As unidades foram
+devolvidas para `00 00` às 16:06 (ACK 0), e uma nova leitura confirmou `0d 00 00`. Ficaram
+com os valores de teste, sem leitura para restaurar: formato 24 h (1), fuso (−3), perfil de
+som (0), interruptores de notificação (1), carrossel (1), tempo de tela (0), qualidade de
+imagem (0), tela sempre acesa (0) e não perturbe o dia todo (0).
+
+Total: 155 comandos codificados, **139 confirmados** no relógio real (63 de configuração).
+Faltam `setDND` (sem leitura), os três automáticos que o relógio não informa e
+`sendChatGptQuziEnd` (sem resposta). Restam 36 comandos não perigosos sem codificador.
+
 ### Incidente de 2026-11-12: desconexão após a notificação no protocolo antigo
 
 Na segunda execução, logo depois de `sendMsg` (`0A/00` no protocolo **antigo**, sem byte de

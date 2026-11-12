@@ -9,7 +9,7 @@ Evidência: **análise estática**, exceto os comandos marcados ✓, que o reló
 Riscos: **seguro** (leitura ou ação transitória), **altera-config** (muda configuração persistente),
 **perigoso** (OTA, fábrica, vínculo, apagar dados, transferência, códigos pessoais, desligar: nunca enviado).
 
-Total: 209 comandos; 141 com codificador; 30 perigosos.
+Total: 209 comandos; 155 com codificador; 30 perigosos.
 
 ## Leituras (18)
 
@@ -56,7 +56,7 @@ Total: 209 comandos; 141 com codificador; 30 perigosos.
 | 04/0D | Configurar sport linkage ✓ | `settingSportLinkage` | altera-config | 00 00 | Um byte por parâmetro: i, i2. |
 | 04/1D | Pedir has gps ✓ | `requestHasGps` | seguro | 00 | Um byte por parâmetro: i. |
 | 03/08 | Reqeust FC hig low ✓ | `reqeustHrHigLow` | altera-config | 01 | Payload fixo: 01. Log do app oficial: "请求心率过高过低提醒阈值". |
-| 03/0A | Enviar FC automático hig low fla | `sendHrAutoHigLowFla` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "设置心率过高过低提醒阈值". |
+| 03/0A | Enviar FC automático hig low fla ✓ | `sendHrAutoHigLowFla` | altera-config | 00 78 00 2D | Liga e valor do alerta de FC alta e baixa. Os valores aceitos vêm de 03/08 → 03/09 (faixa e passo). Log do app oficial: "设置心率过高过低提醒阈值". |
 | 04/19 | Chave do algoritmo GoMore | `sendGomoreKey` | perigoso | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "下发Gomore算法key值". |
 | 04/15 | Pedir sport linkage type ✓ | `requestSportLinkageType` | seguro | (vazio) | Sem payload. Log do app oficial: "APP请求当前支持的运动". |
 
@@ -81,8 +81,8 @@ Total: 209 comandos; 141 com codificador; 30 perigosos.
 | 05/00 | Clima | `sendWeatherInfo` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
 | 05/01 | Clima (2) | `sendWeatherInfo` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
 | 05/02 | Clima (novo) | `sendNewWeatherInfo` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 0A/00 | Enviar notificação (protocolo antigo) | `sendMsg` | perigoso | 00 01 6A F5 DC C9 09 53 61 62 61 74 69 6E 68 6F 05 54 65 73 74 65 00 10 50 72 6F 74 6F 63 6F 6C 6F 20 61 6E 74 69 67 6F | id(2) horário(4) tam+app tam+título tam(2)+texto, limitado a MTU-12 (protocolo sem tipo de app). |
-| 0A/00 | Enviar notificação de teste ✓ | `sendMsgNewProtocol` | seguro | 00 01 6A F5 DC C9 FF 09 53 61 62 61 74 69 6E 68 6F 05 54 65 73 74 65 00 1A 4F 6C C3 A1 20 64 6F 20 52 65 6C C3 B3 67 69 6F 20 53 61 62 61 74 69 6E 68 6F | id(2) horário(4, segundos) tipo(1) tam+app tam+título tam(2)+texto, limitado a 199 bytes na plataforma 10. Log do app oficial: "发送消息推送指令 appName: ". |
+| 0A/00 | Enviar notificação (protocolo antigo) | `sendMsg` | perigoso | 00 01 6A F5 E4 4A 09 53 61 62 61 74 69 6E 68 6F 05 54 65 73 74 65 00 10 50 72 6F 74 6F 63 6F 6C 6F 20 61 6E 74 69 67 6F | id(2) horário(4) tam+app tam+título tam(2)+texto, limitado a MTU-12 (protocolo sem tipo de app). |
+| 0A/00 | Enviar notificação de teste ✓ | `sendMsgNewProtocol` | seguro | 00 01 6A F5 E4 4A FF 09 53 61 62 61 74 69 6E 68 6F 05 54 65 73 74 65 00 1A 4F 6C C3 A1 20 64 6F 20 52 65 6C C3 B3 67 69 6F 20 53 61 62 61 74 69 6E 68 6F | id(2) horário(4, segundos) tipo(1) tam+app tam+título tam(2)+texto, limitado a 199 bytes na plataforma 10. Log do app oficial: "发送消息推送指令 appName: ". |
 | 0A/01 | Apagar notificação ✓ | `sendDeleteMsg` | seguro | 00 01 | id da notificação (u16 big-endian). Log do app oficial: "删除消息 ". |
 | 0E/00 | Simular chamada recebida ✓ | `sendPhoneCallState` | seguro | 01 09 53 61 62 61 74 69 6E 68 6F 09 30 30 30 30 30 30 30 30 30 | estado, tam+nome (UTF-8), tam+número (ASCII). O app oficial manda 1 ao tocar, 5 ao atender e 4 ao encerrar. Log do app oficial: "来电信息：". |
 
@@ -96,7 +96,7 @@ Total: 209 comandos; 141 com codificador; 30 perigosos.
 | 02/00 | Levantar o pulso para acender ✓ | `raiseToWake` | altera-config | 01 01 E0 05 28 | Liga e janela de horário em minutos (u16 big-endian). |
 | 02/01 | Idioma ✓ | `setLanguage` | altera-config | 00 | Um byte por parâmetro: i. |
 | 02/07 | Configuração de sono ✓ | `sendSleepSetting` | altera-config | 01 05 28 01 E0 | Liga e janela do sono em minutos do dia (u16 big-endian). Igual à etiqueta 4 de 02/06. |
-| 02/08 | Acertar data e hora ✓ | `sendSystemTime` | altera-config | 6A D8 C8 E5 | 4 bytes com ano-2000 (6 bits), mês, dia, hora, minuto e segundo empacotados em bits. Log do app oficial: "设置时间". |
+| 02/08 | Acertar data e hora ✓ | `sendSystemTime` | altera-config | 6A D8 D1 E6 | 4 bytes com ano-2000 (6 bits), mês, dia, hora, minuto e segundo empacotados em bits. Log do app oficial: "设置时间". |
 | 02/09 | Restaurar padrão de fábrica | `sendRestoreFactory` | perigoso | 01 | Payload fixo: 01. |
 | 02/0A | Pulso de uso ✓ | `sendWearing` | altera-config | 01 | Um byte por parâmetro: i. |
 | 02/0B | FC automática ✓ | `sendHrAutoTestSetting` | altera-config | 01 00 00 3C 00 00 05 9F | Liga, um byte 0, intervalo em minutos e janela em minutos do dia. Igual à etiqueta 6 de 02/06. |
@@ -108,7 +108,7 @@ Total: 209 comandos; 141 com codificador; 30 perigosos.
 | 02/1C | Definir tempo de tela ✓ | `sendScreenTime` | altera-config | 00 | Um byte por parâmetro: i. |
 | 02/11 | Não perturbe | `setDND` | altera-config | 00 05 28 01 E0 | Liga e janela do não perturbe em minutos do dia. Igual à etiqueta 12 de 02/06. Log do app oficial: "发送设置勿扰指令". |
 | 06/08 | Alarmes ✓ | `getAlarm` | seguro | 01 | Payload fixo: 01. Log do app oficial: "发送请求闹钟指令". |
-| 02/10 | Definir alarme | `setAlarm` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送设置闹钟指令". |
+| 02/10 | Definir alarme ✓ | `setAlarm` | altera-config | A0 00 | Alarmes (lista inteira: máximo/quantidade, toques e 5 bytes por alarme): o payload tem exatamente o formato da resposta de 06/08; a suíte regrava o que leu. Log do app oficial: "发送设置闹钟指令". |
 | 02/12 | Unidades ✓ | `setUnit` | altera-config | 01 01 | Um byte por parâmetro: i, i2. |
 | 13/00 | Lembretes suportados ✓ | `getSupportEventReminder` | seguro | 00 | Payload fixo: 00. |
 | 13/01 | Ler event lembrete ✓ | `getEventReminder` | seguro | (vazio) | O app oficial reenvia os bytes que o relógio informou em 13/00 (lembretes suportados). |
@@ -117,7 +117,7 @@ Total: 209 comandos; 141 com codificador; 30 perigosos.
 | 13/03 | Enviar apagar event lembrete | `sendDeleteEventReminder` | perigoso | — | Payload complexo: documentado, ainda não implementado no app. |
 | 02/20 | Configurar user name | `settingUserName` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "状态：：设置用户名". |
 | 22/00 | Pedir drink lembrete ✓ | `requestDrinkReminder` | seguro | (vazio) | Sem payload. |
-| 02/21 | Configurar drink water | `settingDrinkWater` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "状态：：喝水提醒". |
+| 02/21 | Configurar drink water ✓ | `settingDrinkWater` | altera-config | 00 00 01 08 16 1F | Lembrete de beber água: o payload tem exatamente o formato da resposta de 22/00; a suíte regrava o que leu. Log do app oficial: "状态：：喝水提醒". |
 | 02/23 | Código de pagamento | `sendPaymentCode` | perigoso | — | Payload complexo: documentado, ainda não implementado no app. |
 | 02/24 | Código de rede social | `sendSocialCode` | perigoso | — | Payload complexo: documentado, ainda não implementado no app. |
 | 02/26 | Definir msg red switch ✓ | `setMsgRedSwitch` | altera-config | 01 | 1 liga, 0 desliga. |
@@ -126,20 +126,20 @@ Total: 209 comandos; 141 com codificador; 30 perigosos.
 | 02/3A | Definir image quality ✓ | `setImageQuality` | altera-config | 00 | Um byte por parâmetro: i. |
 | 02/39 | Enviar all day lightup ✓ | `sendAllDayLightup` | altera-config | 00 | Um byte por parâmetro: i. |
 | 02/36 | Enviar all day dnd ✓ | `sendAllDayDND` | altera-config | 00 | Um byte por parâmetro: i. |
-| 02/43 | Enviar estresse automático teste configurar | `sendPrAutoTestSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送设置压力自动测量指令". |
-| 02/1D | Enviar oxigênio automático teste configurar | `sendBoAutoTestSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送设置血氧自动测量指令". |
-| 02/4B | Enviar pressão automático teste configurar | `sendBPAutoTestSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送设置血压自动测量指令". |
-| 02/4C | Enviar scient sono teste configurar | `sendScientSleepTestSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送设置科学睡眠测量指令". |
-| 02/4D | Enviar temperatura automático teste configurar | `sendTemperAutoTestSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送设置体温自动测量指令". |
-| 02/3B | Configurar gaze distance | `settingGazeDistance` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 02/3D | Configurar fitness lembrete | `settingFitnessReminder` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
+| 02/43 | Enviar estresse automático teste configurar ✓ | `sendPrAutoTestSetting` | altera-config | 01 00 00 3C 00 00 05 9F | Medição automática de estresse: liga, 0, intervalo em minutos e janela em minutos do dia. Igual à etiqueta 0x19 de 02/06. Log do app oficial: "发送设置压力自动测量指令". |
+| 02/1D | Enviar oxigênio automático teste configurar | `sendBoAutoTestSetting` | altera-config | 01 00 00 3C 00 00 05 9F | Medição automática de oxigênio: liga, 0, intervalo em minutos e janela em minutos do dia. Igual à etiqueta 0x11 de 02/06. Log do app oficial: "发送设置血氧自动测量指令". |
+| 02/4B | Enviar pressão automático teste configurar ✓ | `sendBPAutoTestSetting` | altera-config | 01 00 00 3C 00 00 05 9F | Medição automática de pressão arterial: liga, 0, intervalo em minutos e janela em minutos do dia. Igual à etiqueta 0x1A de 02/06. Log do app oficial: "发送设置血压自动测量指令". |
+| 02/4C | Enviar scient sono teste configurar ✓ | `sendScientSleepTestSetting` | altera-config | 01 | Sono científico: 1 byte liga/desliga. Igual à etiqueta 0x1B de 02/06. Log do app oficial: "发送设置科学睡眠测量指令". |
+| 02/4D | Enviar temperatura automático teste configurar | `sendTemperAutoTestSetting` | altera-config | 01 00 00 3C 00 00 05 9F | Medição automática de temperatura: liga, 0, intervalo em minutos e janela em minutos do dia. Igual à etiqueta 0x1C de 02/06. Log do app oficial: "发送设置体温自动测量指令". |
+| 02/3B | Configurar gaze distance ✓ | `settingGazeDistance` | altera-config | 00 00 00 3C 08 00 16 00 | Lembrete de olhar longe: o payload tem exatamente o formato da resposta de 02/3C; a suíte regrava o que leu. |
+| 02/3D | Configurar fitness lembrete ✓ | `settingFitnessReminder` | altera-config | 00 00 00 00 08 00 | Lembrete de exercício: o payload tem exatamente o formato da resposta de 02/3E; a suíte regrava o que leu. |
 | 02/32 | Configurar medicine lembrete | `settingMedicineReminder` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 02/3F | Configurar reading lembrete | `settingReadingReminder` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 02/41 | Configurar travel lembrete | `settingTravelReminder` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 02/49 | Configurar hand wash | `settingHandWash` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
+| 02/3F | Configurar reading lembrete ✓ | `settingReadingReminder` | altera-config | 00 00 00 00 08 00 | Lembrete de leitura: o payload tem exatamente o formato da resposta de 02/40; a suíte regrava o que leu. |
+| 02/41 | Configurar travel lembrete ✓ | `settingTravelReminder` | altera-config | 00 00 00 00 08 00 | Lembrete de viagem: o payload tem exatamente o formato da resposta de 02/42; a suíte regrava o que leu. |
+| 02/49 | Configurar hand wash ✓ | `settingHandWash` | altera-config | 00 00 00 1E 08 00 16 00 | Lembrete de lavar as mãos: o payload tem exatamente o formato da resposta de 02/4A; a suíte regrava o que leu. |
 | 02/2C | Definir calorie target | `setCalorieTarget` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送设置上路卡路里目标指令,值为:". |
 | 02/2D | Definir distance target | `setDistanceTarget` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送设置距离目标指令". |
-| 02/4E | Enviar hrv automático teste configurar | `sendHrvAutoTestSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
+| 02/4E | Enviar hrv automático teste configurar | `sendHrvAutoTestSetting` | altera-config | 01 00 00 3C 00 00 05 9F | Medição automática de HRV: liga, 0, intervalo em minutos e janela em minutos do dia. Igual à etiqueta 0x1D de 02/06. |
 
 ## Mostradores (19)
 

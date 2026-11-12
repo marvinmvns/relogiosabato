@@ -30,6 +30,9 @@ const TAG_LEN = {
   // fim do payload. O conteúdo fica guardado em hex, sem interpretação.
   0x33: 9,
 };
+// Medições automáticas com o mesmo formato da FC automática (etiqueta 6).
+const AUTO_TAGS = { 17: 'oxigenioAutomatico', 25: 'estresseAutomatico', 26: 'pressaoAutomatica', 28: 'temperaturaAutomatica', 29: 'hrvAutomatico' };
+const AUTO_CMD = { oxigenioAutomatico: ['sendBoAutoTestSetting', 'oxigênio automático'], estresseAutomatico: ['sendPrAutoTestSetting', 'estresse automático'], pressaoAutomatica: ['sendBPAutoTestSetting', 'pressão automática'], temperaturaAutomatica: ['sendTemperAutoTestSetting', 'temperatura automática'], hrvAutomatico: ['sendHrvAutoTestSetting', 'HRV automático'] };
 const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
 function parseTags(p, start) {
@@ -48,6 +51,9 @@ function parseTags(p, start) {
     if (t === 13) out.unidades = { distancia: p[i + 1], temperatura: p[i + 2] };
     if (t === 16) out.tempoDeTela = p[i + 1];
     if (t === 0x33) out.etiqueta33 = Array.from(p.slice(i + 1, i + 9), (b) => b.toString(16).padStart(2, '0')).join(' ');
+    const auto = AUTO_TAGS[t];
+    if (auto) out[auto] = { ligado: p[i + 1], intervaloMin: (p[i + 3] << 8) | p[i + 4], inicio: hhmm((p[i + 5] << 8) | p[i + 6]), fim: hhmm((p[i + 7] << 8) | p[i + 8]) };
+    if (t === 27) out.sonoCientifico = p[i + 1];
     if (t === 7) out.sedentarismo = { naoPerturbe: p[i + 1], ligado: p[i + 2], limite: (p[i + 3] << 8) | p[i + 4], tempo: p[i + 5], inicio: p[i + 6], fim: p[i + 7], repetir: p[i + 8] };
     i += TAG_LEN[t];
   }
@@ -68,6 +74,10 @@ export function writeBackPlan(settings) {
     ...(settings.sono ? [{ id: 'sendSleepSetting', params: { ligado: settings.sono.ligado, inicio: min(settings.sono.inicio), fim: min(settings.sono.fim) }, campo: 'sono' }] : []),
     ...(settings.fcAutomatica ? [{ id: 'sendHrAutoTestSetting', params: { ligado: settings.fcAutomatica.ligado, intervalo: settings.fcAutomatica.intervaloMin, inicio: min(settings.fcAutomatica.inicio), fim: min(settings.fcAutomatica.fim) }, campo: 'FC automática' }] : []),
     ...(settings.sedentarismo ? [{ id: 'sendSedentaryRemind', params: { ...settings.sedentarismo, limite: settings.sedentarismo.limite & 0xff }, campo: 'sedentarismo' }] : []),
+    ...Object.entries(AUTO_CMD).filter(([k]) => settings[k]).map(([k, [id, campo]]) => ({ id, params: { ligado: settings[k].ligado, intervalo: settings[k].intervaloMin, inicio: min(settings[k].inicio), fim: min(settings[k].fim) }, campo })),
+    ...(settings.sonoCientifico !== undefined ? [{ id: 'sendScientSleepTestSetting', params: { ligado: settings.sonoCientifico }, campo: 'sono científico' }] : []),
+    ...(settings.limitesFc ? [{ id: 'sendHrAutoHigLowFla', params: { altoLigado: settings.limitesFc.alto.ligado, alto: settings.limitesFc.alto.atual, baixoLigado: settings.limitesFc.baixo.ligado, baixo: settings.limitesFc.baixo.atual }, campo: 'limites de alerta de FC' }] : []),
+    ...Object.entries(settings.leituras || {}).filter(([, v]) => v).map(([id, dados]) => ({ id, params: { dados }, campo: RAW_READS.find((r) => r.write === id)?.campo || id })),
     ...(settings.naoPerturbe ? [{ id: 'setDND', params: { ligado: settings.naoPerturbe.ligado, inicio: min(settings.naoPerturbe.inicio), fim: min(settings.naoPerturbe.fim) }, campo: 'não perturbe' }] : []),
   ];
 }
@@ -83,3 +93,28 @@ export function restorePlan(settings) {
     ...(settings.tempoDeTela !== undefined ? [{ id: 'sendScreenTime', params: { i: settings.tempoDeTela }, campo: 'tempo de tela' }] : []),
   ];
 }
+
+/** Resposta 03/09 (pedida com 03/08): alerta de FC alta e baixa (BleDataUtils, b == 9). */
+export function parseHrLimits(p) {
+  if (!p || p.length < 10) return null;
+  return {
+    alto: { ligado: p[0], max: p[1], min: p[2], passo: p[3], atual: p[4] },
+    baixo: { ligado: p[5], max: p[6], min: p[7], passo: p[8], atual: p[9] },
+  };
+}
+
+/**
+ * Leituras cuja resposta tem o mesmo formato do comando de gravação (conferido em
+ * NotifyWriteUtils e CommandUtils): a suíte regrava o payload lido, byte a byte.
+ * Estes são sempre regravados com o valor lido, mesmo com "incluir configurações",
+ * para nunca apagar alarmes ou lembretes.
+ */
+export const RAW_READS = [
+  { read: 'requestGazeDistance', resp: [0x02, 0x3c], write: 'settingGazeDistance', campo: 'lembrete de olhar longe' },
+  { read: 'requestFitnessReminder', resp: [0x02, 0x3e], write: 'settingFitnessReminder', campo: 'lembrete de exercício' },
+  { read: 'requestReadingReminder', resp: [0x02, 0x40], write: 'settingReadingReminder', campo: 'lembrete de leitura' },
+  { read: 'requestTravelReminder', resp: [0x02, 0x42], write: 'settingTravelReminder', campo: 'lembrete de viagem' },
+  { read: 'requestHandWash', resp: [0x02, 0x4a], write: 'settingHandWash', campo: 'lembrete de lavar as mãos' },
+  { read: 'requestDrinkReminder', resp: [0x22, 0x00], write: 'settingDrinkWater', campo: 'lembrete de beber água' },
+  { read: 'getAlarm', resp: [0x06, 0x08], write: 'setAlarm', campo: 'alarmes' },
+];
