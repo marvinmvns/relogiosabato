@@ -37,3 +37,13 @@ test('flattenDocs junta as três listas e marca perigosos como não enviáveis',
   assert.equal(items.find((i) => i.method === 'getDeviceFeatures').sendable, true);
   assert.equal(items[0].code, '06/0A');
 });
+
+import { restorePlan } from '../settings.js';
+test('restorePlan devolve idioma, unidades e tempo de tela lidos', () => {
+  const plan = restorePlan({ levantarParaAcender: 1, idioma: 2, metaPassos: 6000, envioAutomaticoEsporte: 0, envioAutomaticoSaude: 0, pulsoDeUso: 1, unidades: { distancia: 0, temperatura: 0 }, tempoDeTela: 5 });
+  const by = Object.fromEntries(plan.map((p) => [p.id, p.params]));
+  assert.deepEqual(by.setLanguage, { i: 2 });
+  assert.deepEqual(by.setUnit, { i: 0, i2: 0 });
+  assert.deepEqual(by.sendScreenTime, { i: 5 });
+  assert.equal(restorePlan(null).length, 0);
+});

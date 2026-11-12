@@ -62,3 +62,13 @@ export function writeBackPlan(settings) {
     ...(settings.pulsoDeUso !== undefined ? [{ id: 'sendWearing', params: { i: settings.pulsoDeUso }, campo: 'pulso de uso' }] : []),
   ];
 }
+
+/** Tudo o que dá para devolver ao valor lido depois de testar comandos que alteram configurações. */
+export function restorePlan(settings) {
+  if (!settings) return [];
+  return [
+    ...writeBackPlan(settings),
+    ...(settings.unidades ? [{ id: 'setUnit', params: { i: settings.unidades.distancia, i2: settings.unidades.temperatura }, campo: 'unidades' }] : []),
+    ...(settings.tempoDeTela !== undefined ? [{ id: 'sendScreenTime', params: { i: settings.tempoDeTela }, campo: 'tempo de tela' }] : []),
+  ];
+}

@@ -8,7 +8,7 @@
 //   bloqueado    comando perigoso (OTA, reset de fábrica, vincular/desvincular): nunca enviado
 //   pulado       altera configuração e a opção "incluir configurações" está desligada
 import { defaults } from './session.js';
-import { parseSettings, writeBackPlan } from './settings.js';
+import { parseSettings, writeBackPlan, restorePlan } from './settings.js';
 
 const ACK_TIMEOUT_MS = 3000;
 const GAP_MS = 350;
@@ -61,7 +61,10 @@ export async function runSuite(session, plan, { onProgress, signal } = {}) {
   // Regravação: lê as configurações atuais uma vez; cada comando regrava o mesmo valor.
   let before = null;
   let wbParams = new Map();
-  if (plan.some((i) => i.writeBack) && session.connected) {
+  // Com "incluir configurações", os comandos usam valores de teste; no fim a suíte devolve
+  // o que foi lido aqui (idioma, meta, brilho, unidades, tempo de tela...).
+  const changesConfig = plan.some((i) => !i.skip && !i.writeBack && i.command.risk === 'altera-config');
+  if ((changesConfig || plan.some((i) => i.writeBack)) && session.connected) {
     before = await readSettings(session);
     wbParams = new Map(writeBackPlan(before).map((x) => [x.id, x.params]));
     await session.recorder.add({ type: 'suite', note: 'configurações lidas para regravação', configuracoes: before });
@@ -91,12 +94,25 @@ export async function runSuite(session, plan, { onProgress, signal } = {}) {
     onProgress?.({ index, total: plan.length, result });
     if (!item.skip) await sleep(GAP_MS);
   }
+  if (changesConfig && before && session.connected) {
+    const byId = new Map(plan.map((i) => [i.command.id, i.command]));
+    for (const step of restorePlan(before)) {
+      const command = byId.get(step.id);
+      if (!command || !session.connected) continue;
+      const base = { id: `restaura:${step.id}`, label: `Restaurar ${step.campo}`, cmdKey: hexPair(command.cmd, command.key), risk: command.risk, group: 'config' };
+      const result = { ...(await runOne(session, command, base, null, step.params)), note: `valor lido antes da suíte: ${JSON.stringify(step.params)}` };
+      results.push(result);
+      await session.recorder.add({ type: 'teste', ...result });
+      onProgress?.({ index: plan.length - 1, total: plan.length, result });
+      await sleep(GAP_MS);
+    }
+  }
   if (before && session.connected) {
-    // Confere que a regravação não mudou nada.
+    // Confere que a regravação (ou a restauração) deixou tudo como estava.
     const after = await readSettings(session);
     const same = JSON.stringify(after) === JSON.stringify(before);
     const check = {
-      id: 'verificaConfiguracoes', label: 'Configurações inalteradas após regravar', cmdKey: '02/06', risk: 'seguro', group: 'config',
+      id: 'verificaConfiguracoes', label: changesConfig ? 'Configurações iguais às de antes da suíte' : 'Configurações inalteradas após regravar', cmdKey: '02/06', risk: 'seguro', group: 'config',
       status: same ? 'passou' : 'erro', ms: 0, note: same ? 'leitura igual antes e depois' : `mudou: antes ${JSON.stringify(before)} depois ${JSON.stringify(after)}`,
     };
     results.push(check);
