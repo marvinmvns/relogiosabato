@@ -17,7 +17,7 @@ test('configurações só entram com a opção ligada', () => {
   const off = buildPlan(COMMANDS).filter((i) => !i.skip);
   const on = buildPlan(COMMANDS, { includeConfig: true }).filter((i) => !i.skip);
   assert.ok(off.every((i) => i.command.risk === 'seguro' || i.writeBack));
-  assert.deepEqual(off.filter((i) => i.writeBack).map((i) => i.command.id).sort(), ['handBright', 'sendWearing', 'setLanguage', 'setRealtimeHealth', 'setRealtimeSport', 'setStepTarget']);
+  assert.deepEqual(off.filter((i) => i.writeBack).map((i) => i.command.id).sort(), ['handBright', 'sendHrAutoTestSetting', 'sendSedentaryRemind', 'sendSleepSetting', 'sendWearing', 'setDND', 'setLanguage', 'setRealtimeHealth', 'setRealtimeSport', 'setStepTarget']);
   assert.ok(on.length > off.length);
 });
 
@@ -38,3 +38,23 @@ test('relatório em Markdown', () => {
   const md = reportMarkdown({ results, summary: summarize(results, 200) }, { firmware: 'V1.8' });
   assert.match(md, /\| Bateria \| 11\/00 \| seguro \| passou \| 120 \| bateria: 0% \|/);
 });
+
+test('medição: ACK atrasado conta, mas não o ACK do desligar', async () => {
+  const { runSuite } = await import('../suite.js');
+  const listeners = new Set();
+  const fake = {
+    connected: true, counters: { rx: 0 }, lastByCmd: new Map(),
+    recorder: { add: async () => {} },
+    waitFor(match, ms) { return new Promise((resolve) => { const w = { match, resolve }; listeners.add(w); setTimeout(() => { if (listeners.delete(w)) resolve(null); }, ms); }); },
+    emit(frame) { for (const w of [...listeners]) if (w.match(frame)) { listeners.delete(w); w.resolve({ frame, entry: { summary: 'x' } }); } },
+    async send(command, params) {
+      // só o "desligar" (parâmetro falso/0) recebe ACK, imediatamente
+      const v = Object.values(params || {})[0];
+      if (!v) setTimeout(() => this.emit({ kind: 'FD', cmd: command.cmd, key: command.key, status: 0 }), 5);
+    },
+  };
+  const cmd = COMMANDS.find((c) => c.id === 'sendRequestHr' || /^sendRequest/.test(c.method));
+  const plan = [{ command: { ...cmd, params: [{ name: 'z', default: true }] } }];
+  const { results } = await runSuite(fake, plan.map((i) => ({ ...i, command: { ...i.command } })), {});
+  assert.equal(results[0].status, 'sem resposta');
+}, { timeout: 30000 });

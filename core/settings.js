@@ -25,6 +25,10 @@ export function parseSettings(p, { language5Bytes = false } = {}) {
 const TAG_LEN = {
   4: 6, 5: 2, 6: 9, 7: 9, 8: 2, 9: 2, 10: 12, 11: 5, 12: 6, 13: 3, 14: 2, 15: 5, 16: 2, 17: 9,
   18: 2, 19: 2, 20: 2, 21: 9, 22: 5, 23: 5, 24: 2, 25: 9, 26: 9, 27: 2, 28: 9, 29: 9,
+  // 0x33 não existe no app oficial (ele para aqui). Tamanho 9 deduzido da resposta real do
+  // TF37 Pro: com ele, as etiquetas seguintes (0x0D, 0x19, 0x1A, 0x1B) fecham exatamente no
+  // fim do payload. O conteúdo fica guardado em hex, sem interpretação.
+  0x33: 9,
 };
 const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
@@ -43,10 +47,11 @@ function parseTags(p, start) {
     if (t === 12) out.naoPerturbe = { ligado: p[i + 1], inicio: hhmm((p[i + 2] << 8) | p[i + 3]), fim: hhmm((p[i + 4] << 8) | p[i + 5]) };
     if (t === 13) out.unidades = { distancia: p[i + 1], temperatura: p[i + 2] };
     if (t === 16) out.tempoDeTela = p[i + 1];
+    if (t === 0x33) out.etiqueta33 = Array.from(p.slice(i + 1, i + 9), (b) => b.toString(16).padStart(2, '0')).join(' ');
     if (t === 7) out.sedentarismo = { naoPerturbe: p[i + 1], ligado: p[i + 2], limite: (p[i + 3] << 8) | p[i + 4], tempo: p[i + 5], inicio: p[i + 6], fim: p[i + 7], repetir: p[i + 8] };
     i += TAG_LEN[t];
   }
-  if (i < p.length) out.paradoNaEtiqueta = `0x${p[i].toString(16).padStart(2, '0')} (desconhecida também para o app oficial)`;
+  if (i < p.length) out.paradoNaEtiqueta = `0x${p[i].toString(16).padStart(2, '0')} (tamanho desconhecido)`;
   return out;
 }
 
@@ -60,8 +65,14 @@ export function writeBackPlan(settings) {
     { id: 'setRealtimeSport', params: { i: settings.envioAutomaticoEsporte }, campo: 'envio automático de esporte' },
     { id: 'setRealtimeHealth', params: { i: settings.envioAutomaticoSaude }, campo: 'envio automático de saúde' },
     ...(settings.pulsoDeUso !== undefined ? [{ id: 'sendWearing', params: { i: settings.pulsoDeUso }, campo: 'pulso de uso' }] : []),
+    ...(settings.sono ? [{ id: 'sendSleepSetting', params: { ligado: settings.sono.ligado, inicio: min(settings.sono.inicio), fim: min(settings.sono.fim) }, campo: 'sono' }] : []),
+    ...(settings.fcAutomatica ? [{ id: 'sendHrAutoTestSetting', params: { ligado: settings.fcAutomatica.ligado, intervalo: settings.fcAutomatica.intervaloMin, inicio: min(settings.fcAutomatica.inicio), fim: min(settings.fcAutomatica.fim) }, campo: 'FC automática' }] : []),
+    ...(settings.sedentarismo ? [{ id: 'sendSedentaryRemind', params: { ...settings.sedentarismo, limite: settings.sedentarismo.limite & 0xff }, campo: 'sedentarismo' }] : []),
+    ...(settings.naoPerturbe ? [{ id: 'setDND', params: { ligado: settings.naoPerturbe.ligado, inicio: min(settings.naoPerturbe.inicio), fim: min(settings.naoPerturbe.fim) }, campo: 'não perturbe' }] : []),
   ];
 }
+
+const min = (hhmmText) => { const [h, m] = String(hhmmText).split(':').map(Number); return h * 60 + m; };
 
 /** Tudo o que dá para devolver ao valor lido depois de testar comandos que alteram configurações. */
 export function restorePlan(settings) {

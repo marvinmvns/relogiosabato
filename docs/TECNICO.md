@@ -173,12 +173,47 @@ bloco fixo + campos com etiqueta. Valores reais do TF37 Pro em 2026-11-12:
 | etiqueta `05` pulso de uso | 2 bytes | 1 |
 | etiqueta `06` FC automática | 9 bytes | ligada, a cada 30 min, 00:00–23:59 |
 | etiqueta `07` sedentarismo | 9 bytes | desligado, 45 min, 8h–22h, repetição `0xF8` |
+| etiqueta `08`, `0A` (notificações por app) | 2, 12 bytes | 1; onze apps ligados |
+| etiqueta `33` | 9 bytes (deduzido) | `03 c3 ff ff 00 00 00 00`, sem interpretação |
+| etiqueta `0D` unidades | 3 bytes | distância 0, temperatura 0 |
+| etiquetas `19`, `1A`, `1B` | 9, 9, 2 bytes | lidas e ignoradas |
+
+O app oficial para de ler na etiqueta `0x33`, que ele não conhece. Com tamanho 9, as
+etiquetas seguintes fecham exatamente no fim do payload, por isso o leitor do Relógio
+Sabatinho segue adiante e também obtém as unidades.
+
+Os payloads de `sendSleepSetting` (02/07), `sendHrAutoTestSetting` (02/0B),
+`sendSedentaryRemind` (02/0C) e `setDND` (02/11) são idênticos ao bloco das etiquetas
+`04`, `06`, `07` e `0C` (sem o byte da etiqueta). O teste confere isso com a resposta real.
 
 No "Testar tudo", `handBright`, `setLanguage`, `setStepTarget`, `setRealtimeSport`,
-`setRealtimeHealth` e `sendWearing` são enviados com **o valor lido**; no fim a suíte lê
-`02/06` de novo e confere que nada mudou (teste "Configurações inalteradas após regravar").
-Os demais comandos de configuração só rodam com a opção "incluir comandos que alteram
-configurações", e alteram o relógio de verdade.
+`setRealtimeHealth`, `sendWearing`, `sendSleepSetting`, `sendHrAutoTestSetting`,
+`sendSedentaryRemind` e `setDND` (este só se a etiqueta `0C` vier na resposta) são enviados
+com **o valor lido**. No fim, a suíte lê `02/06` de novo e confere que nada mudou (teste
+"Configurações inalteradas após regravar").
+
+Com a opção "incluir comandos que alteram configurações", os demais comandos de
+configuração rodam com valores de teste e alteram o relógio de verdade. A suíte lê `02/06`
+antes e, no fim, devolve tudo o que conseguiu ler (os campos acima, mais unidades e tempo
+de tela). Depois confere com uma nova leitura (teste "Configurações iguais às de antes da
+suíte"). O que o relógio não informa em `02/06` (formato 24 h, fuso, perfil de som,
+interruptores de notificação) fica com o valor de teste.
+
+### Execução completa de 2026-11-12 (com configurações)
+
+Com a opção de configurações ligada: 216 itens, **128 passou**, 4 sem resposta, 54 pulados
+(payload complexo ainda não implementado) e 30 bloqueados. Os 50 comandos de configuração
+codificados foram aceitos (só `sendChatGptQuziEnd`, 1E/03, ficou sem resposta). As 6
+restaurações passaram e a releitura de `02/06` saiu idêntica à de antes. Uma segunda
+execução, no modo seguro, confirmou `sendSleepSetting`, `sendHrAutoTestSetting` e
+`sendSedentaryRemind` regravando o valor lido. Somando as execuções, 128 dos 141 comandos
+codificados foram confirmados; dos 13 restantes, 11 são perigosos e ficam bloqueados.
+
+A medição de FC (`06/04`) apareceu como "sem resposta" porque o relógio estava terminando
+uma sincronização de passos e só confirmou com `FD 06/04 00` depois de 6 s. Em seguida
+mandou `03/0F` = 1 (medindo) e `03/0F` = 2 (falhou: fora do pulso). A suíte agora aceita um
+ACK atrasado dentro da janela de medição, desde que chegue antes do "desligar" (que usa o
+mesmo cmd/key).
 
 ### Incidente de 2026-11-12: desconexão após a notificação no protocolo antigo
 

@@ -17,7 +17,7 @@ medem e registram tudo, e a documentação técnica completa.
 | App oficial | Podsfine `com.lianhezhuli.podsFine` 1.2.3 | Play Store |
 | GATT | `18AC` comandos (`2AAD` escrita, `2AAC` notificação), `1106` arquivos (variante 5610), `180F` bateria | relógio real |
 | Quadros | DF/FD, checksum no byte 3, versão `0x04`, ACK de 10 bytes | 374 quadros em captura + sessões do app |
-| Comandos | 209 extraídos; 137 codificados; 79 confirmados no relógio (6 configurações regravadas sem alterar); 30 perigosos bloqueados | [COMANDOS.md](docs/COMANDOS.md) |
+| Comandos | 209 extraídos; 141 codificados; 128 confirmados no relógio real (52 de configuração, com os valores originais restaurados e conferidos); 30 perigosos bloqueados | [COMANDOS.md](docs/COMANDOS.md) |
 
 ## Estrutura
 

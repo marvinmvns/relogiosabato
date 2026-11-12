@@ -15,11 +15,12 @@ const GAP_MS = 350;
 const AFTER_ACK_MS = 800;
 const REALTIME_WINDOW_MS = 12000;
 
+const WB_ALL = { pulsoDeUso: 0, sono: {}, fcAutomatica: {}, sedentarismo: {}, naoPerturbe: {} };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Ordem: leituras, ações e notificações, medições em tempo real (liga → espera → desliga), configs. */
 export function buildPlan(commands, { includeConfig = false, writeBack = true } = {}) {
-  const wb = new Set(writeBack ? writeBackPlan({ pulsoDeUso: 0 }).map((x) => x.id) : []);
+  const wb = new Set(writeBack ? writeBackPlan(WB_ALL).map((x) => x.id) : []);
   const order = ['leitura', 'saude', 'mostrador', 'acao', 'notificacao', 'midia', 'fone', 'ai', 'config', 'sistema', 'vinculo', 'ota'];
   const sorted = [...commands].sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group));
   return sorted.map((command) => {
@@ -130,6 +131,11 @@ async function runOne(session, command, base, undo, params) {
   const matchResp = (f) => f.kind === 'DF' && f.cmd === command.cmd;
   const ack = session.waitFor(matchAck, ACK_TIMEOUT_MS);
   const resp = session.waitFor(matchResp, ACK_TIMEOUT_MS);
+  // Medições: o relógio às vezes confirma só depois de terminar uma sincronização (vimos
+  // FD 06/04 chegar 6 s depois). Durante a janela de medição, um ACK atrasado também conta.
+  let lateAck = null;
+  let undoAt = Infinity;
+  if (undo) session.waitFor(matchAck, ACK_TIMEOUT_MS + undo.window * 1000).then((x) => { if (x) lateAck = { ...x, ms: Date.now() - t0 }; });
   try {
     await session.send(command, params ?? defaults(command));
   } catch (e) {
@@ -145,6 +151,7 @@ async function runOne(session, command, base, undo, params) {
     // Espera contando pacotes e desfaz, mesmo sem resposta, para não deixar nada ligado.
     const before = session.counters.rx;
     await sleep(undo.window * 1000);
+    undoAt = Date.now() - t0;
     extra = { realtimeFrames: session.counters.rx - before, realtimeWindowS: undo.window };
     try {
       await session.send(command, { ...defaults(command), ...undo.params });
@@ -160,6 +167,10 @@ async function runOne(session, command, base, undo, params) {
   if (a) {
     const ok = a.frame.status === 0;
     return { ...base, status: ok ? 'passou' : 'recusou', ms, ackStatus: a.frame.status, response: 'ACK', ...extra };
+  }
+  if (lateAck && lateAck.ms < undoAt) {
+    const ok = lateAck.frame.status === 0;
+    return { ...base, status: ok ? 'passou' : 'recusou', ms: lateAck.ms, ackStatus: lateAck.frame.status, response: `ACK atrasado (${lateAck.ms} ms)`, ...extra };
   }
   return { ...base, status: 'sem resposta', ms, ...extra };
 }

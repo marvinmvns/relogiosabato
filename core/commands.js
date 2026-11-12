@@ -129,6 +129,49 @@ const CUSTOM = {
     encode: (p) => [p.ligado & 0xff, ...u16(p.inicio), ...u16(p.fim)],
     note: 'Liga e janela de horário em minutos (u16 big-endian).',
   },
+  // Os quatro abaixo têm o mesmo formato do bloco com etiqueta que o relógio devolve em 02/06
+  // (etiquetas 4, 6, 7 e 12), então a suíte consegue regravar o valor atual sem mudar nada.
+  sendSleepSetting: {
+    params: [
+      { name: 'ligado', type: 'u8', label: 'Ligado (1) ou desligado (0)', default: 1, min: 0, max: 1 },
+      { name: 'inicio', type: 'u16', label: 'Início (minutos do dia)', default: 1320, min: 0, max: 1439 },
+      { name: 'fim', type: 'u16', label: 'Fim (minutos do dia)', default: 480, min: 0, max: 1439 },
+    ],
+    encode: (p) => [p.ligado & 0xff, ...u16(p.inicio), ...u16(p.fim)],
+    note: 'Liga e janela do sono em minutos do dia (u16 big-endian). Igual à etiqueta 4 de 02/06.',
+  },
+  sendHrAutoTestSetting: {
+    params: [
+      { name: 'ligado', type: 'u8', label: 'Ligado (1) ou desligado (0)', default: 1, min: 0, max: 1 },
+      { name: 'intervalo', type: 'u16', label: 'Intervalo (minutos)', default: 60, min: 1, max: 1440 },
+      { name: 'inicio', type: 'u16', label: 'Início (minutos do dia)', default: 0, min: 0, max: 1439 },
+      { name: 'fim', type: 'u16', label: 'Fim (minutos do dia)', default: 1439, min: 0, max: 1439 },
+    ],
+    encode: (p) => [p.ligado & 0xff, 0, ...u16(p.intervalo), ...u16(p.inicio), ...u16(p.fim)],
+    note: 'Liga, um byte 0, intervalo em minutos e janela em minutos do dia. Igual à etiqueta 6 de 02/06.',
+  },
+  sendSedentaryRemind: {
+    params: [
+      { name: 'naoPerturbe', type: 'u8', label: 'Pausa no almoço (1/0)', default: 0, min: 0, max: 1 },
+      { name: 'ligado', type: 'u8', label: 'Ligado (1) ou desligado (0)', default: 1, min: 0, max: 1 },
+      { name: 'limite', type: 'u8', label: 'Limite de passos', default: 100, min: 0, max: 255 },
+      { name: 'tempo', type: 'u8', label: 'Tempo parado (minutos)', default: 60, min: 0, max: 255 },
+      { name: 'inicio', type: 'u8', label: 'Hora de início', default: 9, min: 0, max: 23 },
+      { name: 'fim', type: 'u8', label: 'Hora de fim', default: 18, min: 0, max: 23 },
+      { name: 'repetir', type: 'u8', label: 'Dias da semana (bits)', default: 31, min: 0, max: 127 },
+    ],
+    encode: (p) => [p.naoPerturbe & 0xff, p.ligado & 0xff, 0, p.limite & 0xff, p.tempo & 0xff, p.inicio & 0xff, p.fim & 0xff, p.repetir & 0xff],
+    note: 'Pausa, liga, 0, limite, tempo, hora inicial, hora final e dias. Igual à etiqueta 7 de 02/06.',
+  },
+  setDND: {
+    params: [
+      { name: 'ligado', type: 'u8', label: 'Ligado (1) ou desligado (0)', default: 0, min: 0, max: 1 },
+      { name: 'inicio', type: 'u16', label: 'Início (minutos do dia)', default: 1320, min: 0, max: 1439 },
+      { name: 'fim', type: 'u16', label: 'Fim (minutos do dia)', default: 480, min: 0, max: 1439 },
+    ],
+    encode: (p) => [p.ligado & 0xff, ...u16(p.inicio), ...u16(p.fim)],
+    note: 'Liga e janela do não perturbe em minutos do dia. Igual à etiqueta 12 de 02/06.',
+  },
   setStepTarget: {
     params: [{ name: 'passos', type: 'u32', label: 'Meta de passos', default: 8000, min: 0, max: 100000 }],
     encode: (p) => u32(p.passos),

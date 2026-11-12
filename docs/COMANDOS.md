@@ -9,7 +9,7 @@ Evidência: **análise estática**, exceto os comandos marcados ✓, que o reló
 Riscos: **seguro** (leitura ou ação transitória), **altera-config** (muda configuração persistente),
 **perigoso** (OTA, fábrica, vínculo, apagar dados, transferência, códigos pessoais, desligar: nunca enviado).
 
-Total: 209 comandos; 137 com codificador; 30 perigosos.
+Total: 209 comandos; 141 com codificador; 30 perigosos.
 
 ## Leituras (18)
 
@@ -52,10 +52,10 @@ Total: 209 comandos; 137 com codificador; 30 perigosos.
 | 19/00 | Ler ciclo menstrual ✓ | `getMenstrual` | seguro | (vazio) | Sem payload. |
 | 19/01 | Definir ciclo menstrual | `setMenstrual` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "设置女性健康: ". O método tem 2 variantes; usada a primeira. |
 | 19/03 | Pedir ciclo menstrual ✓ | `requestMenstrual` | seguro | (vazio) | Sem payload. |
-| 19/05 | Definir ciclo menstrual switch | `setMenstrualSwitch` | altera-config | 01 | 1 liga, 0 desliga. |
-| 04/0D | Configurar sport linkage | `settingSportLinkage` | altera-config | 00 00 | Um byte por parâmetro: i, i2. |
+| 19/05 | Definir ciclo menstrual switch ✓ | `setMenstrualSwitch` | altera-config | 01 | 1 liga, 0 desliga. |
+| 04/0D | Configurar sport linkage ✓ | `settingSportLinkage` | altera-config | 00 00 | Um byte por parâmetro: i, i2. |
 | 04/1D | Pedir has gps ✓ | `requestHasGps` | seguro | 00 | Um byte por parâmetro: i. |
-| 03/08 | Reqeust FC hig low | `reqeustHrHigLow` | altera-config | 01 | Payload fixo: 01. Log do app oficial: "请求心率过高过低提醒阈值". |
+| 03/08 | Reqeust FC hig low ✓ | `reqeustHrHigLow` | altera-config | 01 | Payload fixo: 01. Log do app oficial: "请求心率过高过低提醒阈值". |
 | 03/0A | Enviar FC automático hig low fla | `sendHrAutoHigLowFla` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "设置心率过高过低提醒阈值". |
 | 04/19 | Chave do algoritmo GoMore | `sendGomoreKey` | perigoso | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "下发Gomore算法key值". |
 | 04/15 | Pedir sport linkage type ✓ | `requestSportLinkageType` | seguro | (vazio) | Sem payload. Log do app oficial: "APP请求当前支持的运动". |
@@ -69,9 +69,9 @@ Total: 209 comandos; 137 com codificador; 30 perigosos.
 | 06/02 | Tirar foto (câmera remota) ✓ | `sendPhotoCap` | seguro | 01 | Payload fixo: 01. |
 | 06/03 | Fechar câmera remota ✓ | `sendCameraClose` | seguro | 00 | Um byte por parâmetro: i. |
 | 06/09 | Ler fone shtudown | `getEpShtudown` | perigoso | 01 | Payload fixo: 01. Log do app oficial: "发送请求设备关机指令". |
-| 06/0A | Ler fone restart | `getEpRestart` | perigoso | 01 | Payload fixo: 01. Log do app oficial: "发送请求设备重启指令". |
-| 06/0B | Parar find phone | `stopFindPhone` | altera-config | 01 | Payload fixo: 01. Log do app oficial: "发送退出找手机指令". |
-| 06/0F | Parar find relógio | `stopFindWatch` | altera-config | 01 | Payload fixo: 01. Log do app oficial: "发送退出找手表指令". |
+| 06/0A | Ler fone restart ✓ | `getEpRestart` | perigoso | 01 | Payload fixo: 01. Log do app oficial: "发送请求设备重启指令". |
+| 06/0B | Parar find phone ✓ | `stopFindPhone` | altera-config | 01 | Payload fixo: 01. Log do app oficial: "发送退出找手机指令". |
+| 06/0F | Parar find relógio ✓ | `stopFindWatch` | altera-config | 01 | Payload fixo: 01. Log do app oficial: "发送退出找手表指令". |
 | 06/09 | Desligar o relógio | `sendShutDown` | perigoso | 01 | Payload fixo: 01. Log do app oficial: "发送关机指令". |
 
 ## Notificações (7)
@@ -81,8 +81,8 @@ Total: 209 comandos; 137 com codificador; 30 perigosos.
 | 05/00 | Clima | `sendWeatherInfo` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
 | 05/01 | Clima (2) | `sendWeatherInfo` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
 | 05/02 | Clima (novo) | `sendNewWeatherInfo` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 0A/00 | Enviar notificação (protocolo antigo) | `sendMsg` | perigoso | 00 01 6A F5 40 BC 09 53 61 62 61 74 69 6E 68 6F 05 54 65 73 74 65 00 10 50 72 6F 74 6F 63 6F 6C 6F 20 61 6E 74 69 67 6F | id(2) horário(4) tam+app tam+título tam(2)+texto, limitado a MTU-12 (protocolo sem tipo de app). |
-| 0A/00 | Enviar notificação de teste ✓ | `sendMsgNewProtocol` | seguro | 00 01 6A F5 40 BC FF 09 53 61 62 61 74 69 6E 68 6F 05 54 65 73 74 65 00 1A 4F 6C C3 A1 20 64 6F 20 52 65 6C C3 B3 67 69 6F 20 53 61 62 61 74 69 6E 68 6F | id(2) horário(4, segundos) tipo(1) tam+app tam+título tam(2)+texto, limitado a 199 bytes na plataforma 10. Log do app oficial: "发送消息推送指令 appName: ". |
+| 0A/00 | Enviar notificação (protocolo antigo) | `sendMsg` | perigoso | 00 01 6A F5 DC C9 09 53 61 62 61 74 69 6E 68 6F 05 54 65 73 74 65 00 10 50 72 6F 74 6F 63 6F 6C 6F 20 61 6E 74 69 67 6F | id(2) horário(4) tam+app tam+título tam(2)+texto, limitado a MTU-12 (protocolo sem tipo de app). |
+| 0A/00 | Enviar notificação de teste ✓ | `sendMsgNewProtocol` | seguro | 00 01 6A F5 DC C9 FF 09 53 61 62 61 74 69 6E 68 6F 05 54 65 73 74 65 00 1A 4F 6C C3 A1 20 64 6F 20 52 65 6C C3 B3 67 69 6F 20 53 61 62 61 74 69 6E 68 6F | id(2) horário(4, segundos) tipo(1) tam+app tam+título tam(2)+texto, limitado a 199 bytes na plataforma 10. Log do app oficial: "发送消息推送指令 appName: ". |
 | 0A/01 | Apagar notificação ✓ | `sendDeleteMsg` | seguro | 00 01 | id da notificação (u16 big-endian). Log do app oficial: "删除消息 ". |
 | 0E/00 | Simular chamada recebida ✓ | `sendPhoneCallState` | seguro | 01 09 53 61 62 61 74 69 6E 68 6F 09 30 30 30 30 30 30 30 30 30 | estado, tam+nome (UTF-8), tam+número (ASCII). O app oficial manda 1 ao tocar, 5 ao atender e 4 ao encerrar. Log do app oficial: "来电信息：". |
 
@@ -93,26 +93,26 @@ Total: 209 comandos; 137 com codificador; 30 perigosos.
 | 02/04 | Perfil do usuário | `setUserInfo` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
 | 02/05 | Meta de passos ✓ | `setStepTarget` | altera-config | 00 00 1F 40 | u32 big-endian. |
 | 02/00 | Brilho da tela ✓ | `handBright` | altera-config | 00 | Um byte por parâmetro: i. |
-| 02/00 | Levantar o pulso para acender | `raiseToWake` | altera-config | 01 01 E0 05 28 | Liga e janela de horário em minutos (u16 big-endian). |
+| 02/00 | Levantar o pulso para acender ✓ | `raiseToWake` | altera-config | 01 01 E0 05 28 | Liga e janela de horário em minutos (u16 big-endian). |
 | 02/01 | Idioma ✓ | `setLanguage` | altera-config | 00 | Um byte por parâmetro: i. |
-| 02/07 | Configuração de sono | `sendSleepSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 02/08 | Acertar data e hora | `sendSystemTime` | altera-config | 6A D8 17 70 | 4 bytes com ano-2000 (6 bits), mês, dia, hora, minuto e segundo empacotados em bits. Log do app oficial: "设置时间". |
+| 02/07 | Configuração de sono ✓ | `sendSleepSetting` | altera-config | 01 05 28 01 E0 | Liga e janela do sono em minutos do dia (u16 big-endian). Igual à etiqueta 4 de 02/06. |
+| 02/08 | Acertar data e hora ✓ | `sendSystemTime` | altera-config | 6A D8 C8 E5 | 4 bytes com ano-2000 (6 bits), mês, dia, hora, minuto e segundo empacotados em bits. Log do app oficial: "设置时间". |
 | 02/09 | Restaurar padrão de fábrica | `sendRestoreFactory` | perigoso | 01 | Payload fixo: 01. |
 | 02/0A | Pulso de uso ✓ | `sendWearing` | altera-config | 01 | Um byte por parâmetro: i. |
-| 02/0B | FC automática | `sendHrAutoTestSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 09/00 | Fuso horário | `setTimeZone` | altera-config | 01 03 | Sinal (0 = positivo, 1 = negativo) e valor absoluto em horas inteiras. Log do app oficial: "设置时区 offset: ". |
-| 02/0C | Lembrete de sedentarismo | `sendSedentaryRemind` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 02/0D | Formato 24 horas | `set24Hour` | altera-config | 01 | Um byte por parâmetro: i. |
-| 02/0E | Carrossel de telas | `setCarousel` | altera-config | 01 | Um byte por parâmetro: i. |
+| 02/0B | FC automática ✓ | `sendHrAutoTestSetting` | altera-config | 01 00 00 3C 00 00 05 9F | Liga, um byte 0, intervalo em minutos e janela em minutos do dia. Igual à etiqueta 6 de 02/06. |
+| 09/00 | Fuso horário ✓ | `setTimeZone` | altera-config | 01 03 | Sinal (0 = positivo, 1 = negativo) e valor absoluto em horas inteiras. Log do app oficial: "设置时区 offset: ". |
+| 02/0C | Lembrete de sedentarismo ✓ | `sendSedentaryRemind` | altera-config | 00 01 00 64 3C 09 12 1F | Pausa, liga, 0, limite, tempo, hora inicial, hora final e dias. Igual à etiqueta 7 de 02/06. |
+| 02/0D | Formato 24 horas ✓ | `set24Hour` | altera-config | 01 | Um byte por parâmetro: i. |
+| 02/0E | Carrossel de telas ✓ | `setCarousel` | altera-config | 01 | Um byte por parâmetro: i. |
 | 02/14 | Contato de SOS | `sendSosInfo` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 02/1C | Definir tempo de tela | `sendScreenTime` | altera-config | 00 | Um byte por parâmetro: i. |
-| 02/11 | Não perturbe | `setDND` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送设置勿扰指令". |
+| 02/1C | Definir tempo de tela ✓ | `sendScreenTime` | altera-config | 00 | Um byte por parâmetro: i. |
+| 02/11 | Não perturbe | `setDND` | altera-config | 00 05 28 01 E0 | Liga e janela do não perturbe em minutos do dia. Igual à etiqueta 12 de 02/06. Log do app oficial: "发送设置勿扰指令". |
 | 06/08 | Alarmes ✓ | `getAlarm` | seguro | 01 | Payload fixo: 01. Log do app oficial: "发送请求闹钟指令". |
 | 02/10 | Definir alarme | `setAlarm` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送设置闹钟指令". |
-| 02/12 | Unidades | `setUnit` | altera-config | 01 01 | Um byte por parâmetro: i, i2. |
+| 02/12 | Unidades ✓ | `setUnit` | altera-config | 01 01 | Um byte por parâmetro: i, i2. |
 | 13/00 | Lembretes suportados ✓ | `getSupportEventReminder` | seguro | 00 | Payload fixo: 00. |
 | 13/01 | Ler event lembrete ✓ | `getEventReminder` | seguro | (vazio) | O app oficial reenvia os bytes que o relógio informou em 13/00 (lembretes suportados). |
-| 02/13 | Perfil de som | `setProfile` | altera-config | 00 | Um byte por parâmetro: i. |
+| 02/13 | Perfil de som ✓ | `setProfile` | altera-config | 00 | Um byte por parâmetro: i. |
 | 13/02 | Enviar event lembrete | `sendEventReminder` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
 | 13/03 | Enviar apagar event lembrete | `sendDeleteEventReminder` | perigoso | — | Payload complexo: documentado, ainda não implementado no app. |
 | 02/20 | Configurar user name | `settingUserName` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "状态：：设置用户名". |
@@ -120,12 +120,12 @@ Total: 209 comandos; 137 com codificador; 30 perigosos.
 | 02/21 | Configurar drink water | `settingDrinkWater` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "状态：：喝水提醒". |
 | 02/23 | Código de pagamento | `sendPaymentCode` | perigoso | — | Payload complexo: documentado, ainda não implementado no app. |
 | 02/24 | Código de rede social | `sendSocialCode` | perigoso | — | Payload complexo: documentado, ainda não implementado no app. |
-| 02/26 | Definir msg red switch | `setMsgRedSwitch` | altera-config | 01 | 1 liga, 0 desliga. |
-| 02/27 | Definir msg notify switch | `setMsgNotifySwitch` | altera-config | 01 | 1 liga, 0 desliga. |
-| 02/28 | Definir msg notify all switch | `setMsgNotifyAllSwitch` | altera-config | 01 | 1 liga, 0 desliga. |
-| 02/3A | Definir image quality | `setImageQuality` | altera-config | 00 | Um byte por parâmetro: i. |
-| 02/39 | Enviar all day lightup | `sendAllDayLightup` | altera-config | 00 | Um byte por parâmetro: i. |
-| 02/36 | Enviar all day dnd | `sendAllDayDND` | altera-config | 00 | Um byte por parâmetro: i. |
+| 02/26 | Definir msg red switch ✓ | `setMsgRedSwitch` | altera-config | 01 | 1 liga, 0 desliga. |
+| 02/27 | Definir msg notify switch ✓ | `setMsgNotifySwitch` | altera-config | 01 | 1 liga, 0 desliga. |
+| 02/28 | Definir msg notify all switch ✓ | `setMsgNotifyAllSwitch` | altera-config | 01 | 1 liga, 0 desliga. |
+| 02/3A | Definir image quality ✓ | `setImageQuality` | altera-config | 00 | Um byte por parâmetro: i. |
+| 02/39 | Enviar all day lightup ✓ | `sendAllDayLightup` | altera-config | 00 | Um byte por parâmetro: i. |
+| 02/36 | Enviar all day dnd ✓ | `sendAllDayDND` | altera-config | 00 | Um byte por parâmetro: i. |
 | 02/43 | Enviar estresse automático teste configurar | `sendPrAutoTestSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送设置压力自动测量指令". |
 | 02/1D | Enviar oxigênio automático teste configurar | `sendBoAutoTestSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送设置血氧自动测量指令". |
 | 02/4B | Enviar pressão automático teste configurar | `sendBPAutoTestSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送设置血压自动测量指令". |
@@ -158,12 +158,12 @@ Total: 209 comandos; 137 com codificador; 30 perigosos.
 | 32/05 | Definir ele vídeo mostrador | `setEleVideoFace` | perigoso | — | Payload complexo: documentado, ainda não implementado no app. |
 | 0B/01 | Mostrador atual ✓ | `getFaceCode` | seguro | 01 | Payload fixo: 01. |
 | 0B/04 | Mostrador personalizado ✓ | `getCustomizeFaceInfo` | seguro | 01 | Payload fixo: 01. |
-| 2B/01 | Vídeo trans | `videoTrans` | altera-config | 01 | 1 liga, 0 desliga. Log do app oficial: "发送相机关闭视频流===". |
-| 2C/01 | Enviar vídeo iniciar | `sendVideoStart` | altera-config | 00 00 00 | Um byte por parâmetro: i, i2, i3. |
+| 2B/01 | Vídeo trans ✓ | `videoTrans` | altera-config | 01 | 1 liga, 0 desliga. Log do app oficial: "发送相机关闭视频流===". |
+| 2C/01 | Enviar vídeo iniciar ✓ | `sendVideoStart` | altera-config | 00 00 00 | Um byte por parâmetro: i, i2, i3. |
 | 2C/04 | Definir vídeo mostrador info8 | `setVideoFaceInfo8` | perigoso | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "状态：设置视频表盘信息8". |
 | 2C/04 | Definir vídeo mostrador info2 | `setVideoFaceInfo2` | perigoso | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "状态：设置视频表盘信息8". |
 | 2C/03 | Ler vídeo mostrador info ✓ | `getVideoFaceInfo` | seguro | 01 | Payload fixo: 01. |
-| 2C/06 | Enviar multi iniciar | `sendMultiStart` | altera-config | 00 00 00 | Um byte por parâmetro: i, i2, i3. |
+| 2C/06 | Enviar multi iniciar ✓ | `sendMultiStart` | altera-config | 00 00 00 | Um byte por parâmetro: i, i2, i3. |
 
 ## Mídia e câmera (9)
 
@@ -175,7 +175,7 @@ Total: 209 comandos; 137 com codificador; 30 perigosos.
 | 07/07 | Sincronizar áudio | `syncAudio` | perigoso | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "playState： ". |
 | 3A/00 | Pedir barrage info ✓ | `requestBarrageInfo` | seguro | 00 | Payload fixo: 00. |
 | 3A/01 | Enviar barrage info | `sendBarrageInfo` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送弹幕信息==". |
-| 36/02 | Enviar receive gravação | `sendReceiveRecord` | altera-config | 01 | 1 liga, 0 desliga. |
+| 36/02 | Enviar receive gravação ✓ | `sendReceiveRecord` | altera-config | 01 | 1 liga, 0 desliga. |
 | 36/04 | Apagar gravação arquivo | `deleteRecordFile` | perigoso | — | Payload complexo: documentado, ainda não implementado no app. |
 | 36/04 | Apagar allow gravação arquivo | `deleteAllowRecordFile` | perigoso | 01 | 1 liga, 0 desliga. |
 
@@ -184,37 +184,37 @@ Total: 209 comandos; 137 com codificador; 30 perigosos.
 | cmd/key | Comando | Método | Risco | Payload padrão | Descrição |
 |---|---|---|---|---|---|
 | 25/00 | Pedir fone battery ✓ | `requestEpBattery` | seguro | (vazio) | Sem payload. |
-| 25/01 | Enviar upload fone battery | `sendUploadEpBattery` | altera-config | (vazio) | Sem payload. |
+| 25/01 | Enviar upload fone battery ✓ | `sendUploadEpBattery` | altera-config | (vazio) | Sem payload. |
 | 25/02 | Pedir fone eq configurar ✓ | `requestEpEQSetting` | seguro | (vazio) | Sem payload. |
 | 25/03 | Enviar fone eq configurar | `sendEpEQSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 25/04 | Enviar upload fone eq configurar | `sendUploadEpEQSetting` | altera-config | (vazio) | Sem payload. |
+| 25/04 | Enviar upload fone eq configurar ✓ | `sendUploadEpEQSetting` | altera-config | (vazio) | Sem payload. |
 | 25/05 | Pedir fone find left ✓ | `requestEpFindLeft` | seguro | (vazio) | Sem payload. |
 | 25/06 | Pedir fone find right ✓ | `requestEpFindRight` | seguro | (vazio) | Sem payload. |
 | 25/07 | Pedir fone anc configurar ✓ | `requestEpANCSetting` | seguro | (vazio) | Sem payload. |
 | 25/08 | Definir fone anc configurar | `setEpANCSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 25/09 | Upload fone anc configurar | `uploadEpANCSetting` | altera-config | (vazio) | Sem payload. |
+| 25/09 | Upload fone anc configurar ✓ | `uploadEpANCSetting` | altera-config | (vazio) | Sem payload. |
 | 25/0A | Pedir ep3 d áudio configurar ✓ | `requestEp3DAudioSetting` | seguro | (vazio) | Sem payload. |
 | 25/0B | Definir ep3 d áudio configurar | `setEp3DAudioSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 25/0C | Upload ep3 d áudio configurar | `uploadEp3DAudioSetting` | altera-config | (vazio) | Sem payload. |
+| 25/0C | Upload ep3 d áudio configurar ✓ | `uploadEp3DAudioSetting` | altera-config | (vazio) | Sem payload. |
 | 25/0D | Pedir fone squelch configurar ✓ | `requestEpSquelchSetting` | seguro | 01 | 1 liga, 0 desliga. |
 | 25/0E | Definir fone squelch configurar | `setEpSquelchSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 25/0F | Upload fone squelch configurar | `uploadEpSquelchSetting` | altera-config | (vazio) | Sem payload. |
+| 25/0F | Upload fone squelch configurar ✓ | `uploadEpSquelchSetting` | altera-config | (vazio) | Sem payload. |
 | 25/10 | Pedir fone touch wakeup switch ✓ | `requestEpTouchWakeupSwitch` | seguro | (vazio) | Sem payload. |
-| 25/11 | Definir fone touch wakeup switch | `setEpTouchWakeupSwitch` | altera-config | 01 | 1 liga, 0 desliga. |
-| 25/12 | Upload fone touch wakeup switch | `uploadEpTouchWakeupSwitch` | altera-config | (vazio) | Sem payload. |
+| 25/11 | Definir fone touch wakeup switch ✓ | `setEpTouchWakeupSwitch` | altera-config | 01 | 1 liga, 0 desliga. |
+| 25/12 | Upload fone touch wakeup switch ✓ | `uploadEpTouchWakeupSwitch` | altera-config | (vazio) | Sem payload. |
 | 25/13 | Pedir fone beep switch ✓ | `requestEpBeepSwitch` | seguro | (vazio) | Sem payload. |
-| 25/14 | Definir fone beep switch | `setEpBeepSwitch` | altera-config | (vazio) | Sem payload. |
-| 25/15 | Upload fone beep switch | `uploadEpBeepSwitch` | altera-config | (vazio) | Sem payload. |
+| 25/14 | Definir fone beep switch ✓ | `setEpBeepSwitch` | altera-config | (vazio) | Sem payload. |
+| 25/15 | Upload fone beep switch ✓ | `uploadEpBeepSwitch` | altera-config | (vazio) | Sem payload. |
 | 25/16 | Pedir fone key fun configurar ✓ | `requestEpKeyFunSetting` | seguro | (vazio) | Sem payload. |
 | 25/17 | Definir fone key fun configurar | `setEpKeyFunSetting` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. O método tem 2 variantes; usada a primeira. |
-| 25/18 | Upload fone key fun configurar | `uploadEpKeyFunSetting` | altera-config | (vazio) | Sem payload. |
+| 25/18 | Upload fone key fun configurar ✓ | `uploadEpKeyFunSetting` | altera-config | (vazio) | Sem payload. |
 | 25/19 | Pedir fone find left close ✓ | `requestEpFindLeftClose` | seguro | (vazio) | Sem payload. |
 | 25/1A | Pedir fone find right close ✓ | `requestEpFindRightClose` | seguro | (vazio) | Sem payload. |
 | 25/1B | Pedir fone device name ✓ | `requestEpDeviceName` | seguro | (vazio) | Sem payload. |
 | 25/1C | Enviar fone device name | `sendEpDeviceName` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
 | 26/01 | Enviar fone world time zone | `sendEpWorldTimeZone` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
 | 26/02 | Pedir fone world time zone ✓ | `requestEpWorldTimeZone` | seguro | (vazio) | Sem payload. |
-| 26/03 | Upload fone world time zone | `uploadEpWorldTimeZone` | altera-config | (vazio) | Sem payload. |
+| 26/03 | Upload fone world time zone ✓ | `uploadEpWorldTimeZone` | altera-config | (vazio) | Sem payload. |
 | 27/00 | Pedir fone brightness ✓ | `requestEpBrightness` | seguro | (vazio) | Sem payload. |
 | 27/02 | Enviar fone brightness | `sendEpBrightness` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
 | 27/03 | Pedir fone volume ✓ | `requestEpVolume` | seguro | (vazio) | Sem payload. |
@@ -226,31 +226,31 @@ Total: 209 comandos; 137 com codificador; 30 perigosos.
 | cmd/key | Comando | Método | Risco | Payload padrão | Descrição |
 |---|---|---|---|---|---|
 | 31/00 | Enviar IA mostrador answer | `sendAiDialAnswer` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 31/04 | Notice IA mostrador speech fail | `noticeAiDialSpeechFail` | altera-config | 00 | Payload fixo: 00. |
-| 31/06 | Notice enviar IA pic fail | `noticeSendAIPicFail` | altera-config | 00 | Payload fixo: 00. |
+| 31/04 | Notice IA mostrador speech fail ✓ | `noticeAiDialSpeechFail` | altera-config | 00 | Payload fixo: 00. |
+| 31/06 | Notice enviar IA pic fail ✓ | `noticeSendAIPicFail` | altera-config | 00 | Payload fixo: 00. |
 | 31/07 | Pedir IA mostrador params ✓ | `requestAiDialParams` | seguro | 00 | Payload fixo: 00. |
 | 31/0A | Enviar IA mostrador style | `sendAiDialStyle` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
 | 37/06 | Enviar IA definir alarme | `sendAiSetAlarm` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
 | 37/07 | Enviar IA alarme date | `sendAiAlarmDate` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 30/07 | Enviar iniciar tradução | `sendStartTranslate` | altera-config | 00 | Payload fixo: 00. |
-| 30/08 | Enviar end tradução | `sendEndTranslate` | altera-config | 00 | Payload fixo: 00. |
-| 30/09 | Enviar gravação fail | `sendRecordFail` | altera-config | 00 | Payload fixo: 00. |
+| 30/07 | Enviar iniciar tradução ✓ | `sendStartTranslate` | altera-config | 00 | Payload fixo: 00. |
+| 30/08 | Enviar end tradução ✓ | `sendEndTranslate` | altera-config | 00 | Payload fixo: 00. |
+| 30/09 | Enviar gravação fail ✓ | `sendRecordFail` | altera-config | 00 | Payload fixo: 00. |
 | 30/05 | Enviar soure texto | `sendSoureText` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送翻译源=====text== ". |
 | 30/06 | Enviar tradução texto | `sendTranslateText` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "发送翻译结果=====text== ". |
-| 30/0A | Enviar language code | `sendLanguageCode` | altera-config | 00 00 | Um byte por parâmetro: i, i2. |
+| 30/0A | Enviar language code ✓ | `sendLanguageCode` | altera-config | 00 00 | Um byte por parâmetro: i, i2. |
 | 1E/00 | Enviar chat GPT quzi texto | `sendChatGptQuziText` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "AIChat 聊天 下发回答的问题：". |
 | 1E/02 | Enviar chat GPT quzi iniciar | `sendChatGptQuziStart` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
 | 1E/03 | Enviar chat GPT quzi end | `sendChatGptQuziEnd` | altera-config | 00 | Payload fixo: 00. |
 | 1E/01 | Enviar chat GPT asr texto | `sendChatGptAsrText` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
-| 1E/07 | Notice speech fail | `noticeSpeechFail` | altera-config | 00 | Payload fixo: 00. |
+| 1E/07 | Notice speech fail ✓ | `noticeSpeechFail` | altera-config | 00 | Payload fixo: 00. |
 | 1E/10 | Enviar todo lembrete | `sendTODOReminder` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. |
 | 1E/11 | Apagar todo lembrete | `deleteTODOReminder` | perigoso | — | Payload complexo: documentado, ainda não implementado no app. |
-| 3B/01 | Enviar sim t language | `sendSimTLanguage` | altera-config | 00 00 | Um byte por parâmetro: i, i2. |
+| 3B/01 | Enviar sim t language ✓ | `sendSimTLanguage` | altera-config | 00 00 | Um byte por parâmetro: i, i2. |
 | 3B/08 | Enviar sim soure texto | `sendSimSoureText` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "sim发送翻译源=====text== ". |
 | 3B/09 | Enviar sim tradução texto | `sendSimTranslateText` | altera-config | — | Payload complexo: documentado, ainda não implementado no app. Log do app oficial: "sim发送翻译结果=====text== ". |
-| 3B/0A | Enviar sim iniciar tradução | `sendSimStartTranslate` | altera-config | 00 | Payload fixo: 00. |
-| 3B/0B | Enviar sim end tradução | `sendSimEndTranslate` | altera-config | 00 | Payload fixo: 00. |
-| 3B/0C | Enviar sim gravação fail | `sendSimRecordFail` | altera-config | 00 | Payload fixo: 00. |
+| 3B/0A | Enviar sim iniciar tradução ✓ | `sendSimStartTranslate` | altera-config | 00 | Payload fixo: 00. |
+| 3B/0B | Enviar sim end tradução ✓ | `sendSimEndTranslate` | altera-config | 00 | Payload fixo: 00. |
+| 3B/0C | Enviar sim gravação fail ✓ | `sendSimRecordFail` | altera-config | 00 | Payload fixo: 00. |
 
 ## Sistema (5)
 
