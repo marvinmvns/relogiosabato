@@ -251,8 +251,8 @@ Faltam `setDND` (sem leitura), os três automáticos que o relógio não informa
 210 itens: 89 passou, 4 sem resposta, 86 pulados, 30 bloqueados e 1 "erro". O "erro" era a
 verificação final: a releitura de 03/09 (limites de FC) não chegou, e a comparação antiga
 tratava o campo ausente como mudança. Todos os outros campos relidos estavam iguais. Agora
-a comparação é feita campo a campo (`compareSettings`): campo ausente na releitura aparece
-como "não relido" e só valor diferente conta como mudança. Os pedidos de 03/08 e 02/06
+a comparação é feita campo a campo, inclusive dentro de objetos (`compareSettings`): campo ausente na releitura aparece
+como "não relido" e só valor diferente conta como mudança (na execução das 16:21 foi a releitura de alarmes que se perdeu). Os pedidos de 03/08, 02/06 e de alarmes e lembretes
 tentam duas vezes. Os 4 "sem resposta" (02/3E, 02/02, 19/03, 02/0A) passaram em execuções
 anteriores: o relógio às vezes demora mais de 3 s enquanto sincroniza.
 

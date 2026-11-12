@@ -121,7 +121,7 @@ export async function runSuite(session, plan, { onProgress, signal } = {}) {
       id: 'verificaConfiguracoes', label: changesConfig ? 'Configurações iguais às de antes da suíte' : 'Configurações inalteradas após regravar', cmdKey: '02/06', risk: 'seguro', group: 'config',
       status: cmp.changed.length ? 'erro' : cmp.compared ? 'passou' : 'sem resposta', ms: 0,
       note: cmp.changed.length
-        ? `mudou: ${cmp.changed.map((k) => `${k}: ${JSON.stringify(before[k])} → ${JSON.stringify(after?.[k])}`).join('; ')}`
+        ? `mudou: ${cmp.changed.map((k) => `${k}: ${JSON.stringify(dig(before, k))} → ${JSON.stringify(dig(after, k))}`).join('; ')}`
         : cmp.compared ? `leitura igual antes e depois (${cmp.compared} campos)${cmp.missing.length ? `; não relidos: ${cmp.missing.join(', ')}` : ''}` : 'a releitura não chegou',
     };
     results.push(check);
@@ -236,9 +236,12 @@ export async function readSettings(session) {
     for (const r of RAW_READS) {
       const cmd = commandById(r.read);
       if (!cmd || !session.connected) continue;
-      const wait = session.waitFor((f) => f.kind === 'DF' && f.cmd === r.resp[0] && f.key === r.resp[1], 3000);
-      await session.send(cmd, defaults(cmd));
-      const got = await wait;
+      let got = null;
+      for (let tentativa = 0; tentativa < 2 && !got && session.connected; tentativa += 1) {
+        const wait = session.waitFor((f) => f.kind === 'DF' && f.cmd === r.resp[0] && f.key === r.resp[1], 3000);
+        await session.send(cmd, defaults(cmd));
+        got = await wait;
+      }
       settings.leituras[r.write] = got ? Array.from(got.frame.payload, (b) => b.toString(16).padStart(2, '0')).join(' ') : null;
     }
   }
@@ -249,15 +252,26 @@ export async function readSettings(session) {
  * Compara as leituras de antes e depois campo a campo. Um campo que não voltou na
  * releitura (resposta perdida) é listado à parte, sem contar como mudança.
  */
+const dig = (o, path) => path.split('.').reduce((v, k) => v?.[k], o);
+
 export function compareSettings(before, after) {
   const changed = [];
   const missing = [];
   let compared = 0;
-  for (const k of Object.keys(before || {})) {
-    if (after?.[k] === undefined || after?.[k] === null) { missing.push(k); continue; }
-    compared += 1;
-    if (JSON.stringify(after[k]) !== JSON.stringify(before[k])) changed.push(k);
-  }
-  for (const k of Object.keys(after || {})) if (before?.[k] === undefined) changed.push(k);
+  const plain = (v) => v && typeof v === 'object' && !Array.isArray(v);
+  const walk = (b, a, path) => {
+    for (const k of Object.keys(b || {})) {
+      const p = path ? `${path}.${k}` : k;
+      if (b[k] === null || b[k] === undefined) continue;
+      if (a?.[k] === undefined || a?.[k] === null) { missing.push(p); continue; }
+      if (plain(b[k]) && plain(a[k])) { walk(b[k], a[k], p); continue; }
+      compared += 1;
+      if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) changed.push(p);
+    }
+    for (const k of Object.keys(a || {})) {
+      if ((b?.[k] === undefined || b?.[k] === null) && a[k] !== null && a[k] !== undefined) changed.push(path ? `${path}.${k}` : k);
+    }
+  };
+  walk(before, after, '');
   return { changed, missing, compared };
 }

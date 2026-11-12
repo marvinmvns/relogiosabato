@@ -70,5 +70,9 @@ test('verificação: campo não relido não conta como mudança, valor diferente
   const before = { idioma: 0, limitesFc: { alto: { atual: 120 } } };
   assert.deepEqual(compareSettings(before, { idioma: 0 }), { changed: [], missing: ['limitesFc'], compared: 1 });
   assert.deepEqual(compareSettings(before, { idioma: 1, limitesFc: { alto: { atual: 120 } } }).changed, ['idioma']);
+  // subcampo perdido na releitura (caso real das 16:21: alarmes voltaram null)
+  const b2 = { leituras: { setAlarm: 'a0 00', settingHandWash: '00 1e' } };
+  assert.deepEqual(compareSettings(b2, { leituras: { setAlarm: null, settingHandWash: '00 1e' } }), { changed: [], missing: ['leituras.setAlarm'], compared: 1 });
+  assert.deepEqual(compareSettings(b2, { leituras: { setAlarm: 'a1 00', settingHandWash: '00 1e' } }).changed, ['leituras.setAlarm']);
   assert.equal(compareSettings(before, null).compared, 0);
 });
