@@ -64,3 +64,11 @@ test('alarmes e lembretes ficam em regravação mesmo com configurações ligada
   for (const id of ['setAlarm', 'settingDrinkWater', 'settingHandWash']) assert.equal(on.find((i) => i.command.id === id).writeBack, true, id);
   assert.notEqual(on.find((i) => i.command.id === 'setLanguage').writeBack, true);
 });
+
+test('verificação: campo não relido não conta como mudança, valor diferente conta', async () => {
+  const { compareSettings } = await import('../suite.js');
+  const before = { idioma: 0, limitesFc: { alto: { atual: 120 } } };
+  assert.deepEqual(compareSettings(before, { idioma: 0 }), { changed: [], missing: ['limitesFc'], compared: 1 });
+  assert.deepEqual(compareSettings(before, { idioma: 1, limitesFc: { alto: { atual: 120 } } }).changed, ['idioma']);
+  assert.equal(compareSettings(before, null).compared, 0);
+});

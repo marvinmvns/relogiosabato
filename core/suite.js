@@ -116,10 +116,13 @@ export async function runSuite(session, plan, { onProgress, signal } = {}) {
     // Confere que a regravação (ou a restauração) deixou tudo como estava.
     // Uma segunda tentativa: às vezes a resposta de 02/06 se perde no meio de uma sincronização.
     const after = (await readSettings(session)) ?? (await readSettings(session));
-    const same = JSON.stringify(after) === JSON.stringify(before);
+    const cmp = compareSettings(before, after);
     const check = {
       id: 'verificaConfiguracoes', label: changesConfig ? 'Configurações iguais às de antes da suíte' : 'Configurações inalteradas após regravar', cmdKey: '02/06', risk: 'seguro', group: 'config',
-      status: same ? 'passou' : 'erro', ms: 0, note: same ? 'leitura igual antes e depois' : `mudou: antes ${JSON.stringify(before)} depois ${JSON.stringify(after)}`,
+      status: cmp.changed.length ? 'erro' : cmp.compared ? 'passou' : 'sem resposta', ms: 0,
+      note: cmp.changed.length
+        ? `mudou: ${cmp.changed.map((k) => `${k}: ${JSON.stringify(before[k])} → ${JSON.stringify(after?.[k])}`).join('; ')}`
+        : cmp.compared ? `leitura igual antes e depois (${cmp.compared} campos)${cmp.missing.length ? `; não relidos: ${cmp.missing.join(', ')}` : ''}` : 'a releitura não chegou',
     };
     results.push(check);
     await session.recorder.add({ type: 'teste', ...check });
@@ -221,9 +224,12 @@ export async function readSettings(session) {
   if (settings) {
     // Limites de alerta de FC ficam fora de 02/06: pedidos com 03/08, chegam em 03/09.
     const req = { id: 'reqeustHrHigLow', label: 'Limites de alerta de FC', cmd: 0x03, key: 0x08, risk: 'seguro', params: [], encode: () => [1] };
-    const waitHr = session.waitFor((f) => f.kind === 'DF' && f.cmd === 0x03 && f.key === 0x09, 3000);
-    await session.send(req);
-    const hr = await waitHr;
+    let hr = null;
+    for (let tentativa = 0; tentativa < 2 && !hr && session.connected; tentativa += 1) {
+      const waitHr = session.waitFor((f) => f.kind === 'DF' && f.cmd === 0x03 && f.key === 0x09, 3000);
+      await session.send(req);
+      hr = await waitHr;
+    }
     const limites = hr ? parseHrLimits(hr.frame.payload) : null;
     if (limites) settings.limitesFc = limites;
     settings.leituras = {};
@@ -237,4 +243,21 @@ export async function readSettings(session) {
     }
   }
   return settings;
+}
+
+/**
+ * Compara as leituras de antes e depois campo a campo. Um campo que não voltou na
+ * releitura (resposta perdida) é listado à parte, sem contar como mudança.
+ */
+export function compareSettings(before, after) {
+  const changed = [];
+  const missing = [];
+  let compared = 0;
+  for (const k of Object.keys(before || {})) {
+    if (after?.[k] === undefined || after?.[k] === null) { missing.push(k); continue; }
+    compared += 1;
+    if (JSON.stringify(after[k]) !== JSON.stringify(before[k])) changed.push(k);
+  }
+  for (const k of Object.keys(after || {})) if (before?.[k] === undefined) changed.push(k);
+  return { changed, missing, compared };
 }
