@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Relógio Sabatinho: mostrador redondo com a linha de pulso (área segura 66dp de 108dp). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="5"
+        android:pathData="M54,27a27,27 0 1,0 0.01,0z"/>
+    <path android:fillColor="#00000000" android:strokeColor="#3FD1B5" android:strokeWidth="5"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M36,55 L45,55 L49,45 L57,65 L61,55 L72,55"/>
+</vector>

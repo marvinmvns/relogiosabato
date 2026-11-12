@@ -1,0 +1,2 @@
+# Bleak (MIT), cliente BLE multiplataforma.
+bleak==3.0.2

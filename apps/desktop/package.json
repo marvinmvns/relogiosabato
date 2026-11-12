@@ -1,0 +1,59 @@
+{
+  "name": "relogio-sabatinho-desktop",
+  "productName": "Relógio Sabatinho",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Relógio Sabatinho para Linux, Windows e macOS (Electron)",
+  "main": "main.cjs",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "start": "vite build && electron .",
+    "dist:linux": "vite build && electron-builder --linux AppImage deb",
+    "dist:win": "vite build && electron-builder --win nsis portable",
+    "dist:mac": "vite build && electron-builder --mac dmg"
+  },
+  "build": {
+    "appId": "com.relogiosabatinho.desktop",
+    "productName": "Relógio Sabatinho",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "dist/**/*"
+    ],
+    "linux": {
+      "category": "Utility",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "maintainer": "Relógio Sabatinho"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.utilities",
+      "extendInfo": {
+        "NSBluetoothAlwaysUsageDescription": "Conectar ao relógio TF37 Pro por Bluetooth."
+      }
+    }
+  },
+  "dependencies": {
+    "@fontsource/bricolage-grotesque": "5.3.0"
+  },
+  "devDependencies": {
+    "electron": "45.1.0",
+    "electron-builder": "26.18.1",
+    "vite": "8.3.5"
+  }
+}

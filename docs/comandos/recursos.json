@@ -1,0 +1,1462 @@
+[
+ {
+  "byte": 9,
+  "payload_offset": 0,
+  "mask": "0xFF",
+  "condicao": "==1",
+  "campo": "haveGSenor",
+  "significado": "Possui acelerômetro (G-sensor): byte inteiro == 1",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": 1
+ },
+ {
+  "byte": 10,
+  "payload_offset": 1,
+  "mask": "0xFF",
+  "condicao": "valor (VER==0)",
+  "campo": "gSenorFun",
+  "significado": "VER 0: byte inteiro é o tipo de função do G-sensor",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": 255
+ },
+ {
+  "byte": 10,
+  "payload_offset": 1,
+  "mask": "0x02",
+  "condicao": "bit (VER>=1)",
+  "campo": "gSenorFun",
+  "significado": "VER>=1: bit1=1 -> gSenorFun=2 (pedômetro+sono? hipótese), senão 1",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 10,
+  "payload_offset": 1,
+  "mask": "0x80",
+  "condicao": "!=0 (VER>=1)",
+  "campo": "sleepSetting",
+  "significado": "Suporta configuração de horário de sono",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 11,
+  "payload_offset": 2,
+  "mask": "0xFF",
+  "condicao": "==1",
+  "campo": "haveHr",
+  "significado": "Possui sensor de frequência cardíaca",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": 1
+ },
+ {
+  "byte": 12,
+  "payload_offset": 3,
+  "mask": "0xFF",
+  "condicao": "valor",
+  "campo": "hrFun",
+  "significado": "Nível de função do sensor óptico (1=FC, 2=FC+PA?, 3=+SpO2?, 4=...; usado em getDeviceFeature; hipótese)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": 2
+ },
+ {
+  "byte": 13,
+  "payload_offset": 4,
+  "mask": "0xFF",
+  "condicao": "==1",
+  "campo": "haveGps",
+  "significado": "Possui GPS",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": 0
+ },
+ {
+  "byte": 14,
+  "payload_offset": 5,
+  "mask": "0xFF",
+  "condicao": "valor",
+  "campo": "gpsFun",
+  "significado": "Tipo de função GPS",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": 0
+ },
+ {
+  "byte": 15,
+  "payload_offset": 6,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "haveSedentary",
+  "significado": "Lembrete de sedentarismo",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 15,
+  "payload_offset": 6,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "have24Setting",
+  "significado": "Ajuste formato 12/24 h",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 15,
+  "payload_offset": 6,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "haveCarousel",
+  "significado": "Carrossel/rotação de telas",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 15,
+  "payload_offset": 6,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "supportContact",
+  "significado": "Contatos",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 15,
+  "payload_offset": 6,
+  "mask": "0x0F",
+  "condicao": "valor",
+  "campo": "platform",
+  "significado": "Plataforma/chip (0 ou 1 -> 1; 1/2 => app pede MTU 410; 10 => MTU 23)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": 202
+ },
+ {
+  "byte": 16,
+  "payload_offset": 7,
+  "mask": "0x80",
+  "condicao": "bit7",
+  "campo": "deviceShape",
+  "significado": "Formato da tela = (bit7)+1 (1 ou 2: provável quadrado/redondo; hipótese)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 16,
+  "payload_offset": 7,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "supportOta",
+  "significado": "Suporta OTA",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 16,
+  "payload_offset": 7,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportQrCode",
+  "significado": "QR code",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 16,
+  "payload_offset": 7,
+  "mask": "0x08",
+  "condicao": "!=0",
+  "campo": "supportRaiseToWakeTimeSet",
+  "significado": "Horário configurável para levantar-pulso-acender",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 16,
+  "payload_offset": 7,
+  "mask": "0x04",
+  "condicao": "!=0",
+  "campo": "newMessageProtocol",
+  "significado": "Novo protocolo de notificações",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 16,
+  "payload_offset": 7,
+  "mask": "0x02",
+  "condicao": "!=0",
+  "campo": "supportAlarm",
+  "significado": "Alarmes",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 17,
+  "payload_offset": 8,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "supportWatchFaceSet",
+  "significado": "Troca de mostrador",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 17,
+  "payload_offset": 8,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "supportWatchFaceCustomize",
+  "significado": "Mostrador personalizado (foto)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 17,
+  "payload_offset": 8,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportWatchFacePush",
+  "significado": "Envio de mostradores",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 17,
+  "payload_offset": 8,
+  "mask": "0x1F",
+  "condicao": "valor",
+  "campo": "deviceResolutionRatio",
+  "significado": "Código de resolução da tela",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": 0
+ },
+ {
+  "byte": 18,
+  "payload_offset": 9,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "supportDND",
+  "significado": "Não perturbe",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 18,
+  "payload_offset": 9,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "supportUnitSetting",
+  "significado": "Unidades (métrico/imperial, °C/°F)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 18,
+  "payload_offset": 9,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportProfileSetting",
+  "significado": "Perfil/modo",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 18,
+  "payload_offset": 9,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "support7Weather",
+  "significado": "Clima de 7 dias",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 18,
+  "payload_offset": 9,
+  "mask": "0x08",
+  "condicao": "!=0",
+  "campo": "support20Notification",
+  "significado": "Notificações de ~20 apps (bitmap estendido)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 18,
+  "payload_offset": 9,
+  "mask": "0x04",
+  "condicao": "!=0",
+  "campo": "language5Bytes",
+  "significado": "Bitmap de idiomas de 5 bytes (senão 4)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 18,
+  "payload_offset": 9,
+  "mask": "0x02",
+  "condicao": "!=0",
+  "campo": "supportHid",
+  "significado": "HID (app manda 10/00 versão do Android e cria bond)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 18,
+  "payload_offset": 9,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "supportSos",
+  "significado": "SOS",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 19,
+  "payload_offset": 10,
+  "mask": "0x40",
+  "condicao": "b&(b-128)&64",
+  "campo": "nfcFlag",
+  "significado": "Flag NFC (expressão estranha do descompilador)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 19,
+  "payload_offset": 10,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportBatteryReport",
+  "significado": "Bateria via cmd 0x11 (senão lê GATT 0x2A19)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 19,
+  "payload_offset": 10,
+  "mask": "0x08",
+  "condicao": "!=0",
+  "campo": "supportNucleicAcidCode",
+  "significado": "Código de teste de ácido nucleico (QR saúde)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 19,
+  "payload_offset": 10,
+  "mask": "0x04",
+  "condicao": "!=0",
+  "campo": "supportEventReminder",
+  "significado": "Lembretes de eventos (cmd 0x13)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 19,
+  "payload_offset": 10,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "support200Contact",
+  "significado": "Até 200 contatos",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 20,
+  "payload_offset": 11,
+  "mask": "0xFF",
+  "condicao": "valor",
+  "campo": "codeFormat",
+  "significado": "Formato do código/arquivo de mostrador (8/9 habilitam bits do byte 24)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": 8
+ },
+ {
+  "byte": 21,
+  "payload_offset": 12,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "supportNewWeather",
+  "significado": "Novo protocolo de clima",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 21,
+  "payload_offset": 12,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "pairing",
+  "significado": "Pareamento clássico: app cria bond com MAC derivado (último byte XOR 0x55)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 21,
+  "payload_offset": 12,
+  "mask": "0x08",
+  "condicao": "!=0",
+  "campo": "supportOnOffLogo",
+  "significado": "Logo de liga/desliga",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 21,
+  "payload_offset": 12,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "deviceInfo",
+  "significado": "Suporta 02/17 (versão+nome do projeto)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 22,
+  "payload_offset": 13,
+  "mask": "0x80",
+  "condicao": "==0",
+  "campo": "gluRecord",
+  "significado": "Registro de glicose (INVERTIDO: bit7=0 -> true)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 22,
+  "payload_offset": 13,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportWorkoutPush",
+  "significado": "Envio de treinos",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 22,
+  "payload_offset": 13,
+  "mask": "0x04",
+  "condicao": "!=0",
+  "campo": "supportScreenTime",
+  "significado": "Tempo de tela",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 22,
+  "payload_offset": 13,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "supportBoAutoTest",
+  "significado": "SpO2 automático",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 23,
+  "payload_offset": 14,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "physiologicalCycle",
+  "significado": "Ciclo menstrual",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 24,
+  "payload_offset": 15,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "supportBleNotification",
+  "significado": "Notificações via BLE",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 24,
+  "payload_offset": 15,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportSportDataUpload",
+  "significado": "Upload de dados de esporte",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 24,
+  "payload_offset": 15,
+  "mask": "0x10",
+  "condicao": "!=0 (codeFormat 8/9)",
+  "campo": "is565Bmp",
+  "significado": "Bitmap RGB565",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 24,
+  "payload_offset": 15,
+  "mask": "0x08",
+  "condicao": "!=0 (codeFormat 8/9)",
+  "campo": "is8Bytes",
+  "significado": "Código de mostrador de 8 bytes; também liga is5610Type",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 24,
+  "payload_offset": 15,
+  "mask": "0x04",
+  "condicao": "!=0 (codeFormat 8/9)",
+  "campo": "binPreviewFlag",
+  "significado": "Preview em .bin",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 24,
+  "payload_offset": 15,
+  "mask": "0x02",
+  "condicao": "!=0",
+  "campo": "supportDiyOnlineWpaper",
+  "significado": "Papel de parede DIY online",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 24,
+  "payload_offset": 15,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "supportDiyRdefault",
+  "significado": "Restaurar DIY padrão",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 25,
+  "payload_offset": 16,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "OTA",
+  "significado": "OTA (novo); presença do byte dispara CONNECT_QUERY_OTA",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 25,
+  "payload_offset": 16,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "supportUserName",
+  "significado": "Nome do usuário",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 25,
+  "payload_offset": 16,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "drinkWater",
+  "significado": "Lembrete de beber água",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 25,
+  "payload_offset": 16,
+  "mask": "0x02",
+  "condicao": "!=0",
+  "campo": "supportStrPayQR",
+  "significado": "QR de pagamento (texto)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 25,
+  "payload_offset": 16,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "supportStrSocialQR",
+  "significado": "QR social (texto)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 26,
+  "payload_offset": 17,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "bloodLipidRecord",
+  "significado": "Registro de lipídios",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 26,
+  "payload_offset": 17,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "uricAcidRecord",
+  "significado": "Registro de ácido úrico",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 26,
+  "payload_offset": 17,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "supportFirmwareLog",
+  "significado": "Log de firmware",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 26,
+  "payload_offset": 17,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "sportLinkage",
+  "significado": "Esporte vinculado ao app",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 27,
+  "payload_offset": 18,
+  "mask": "0x0F",
+  "condicao": "valor",
+  "campo": "deviceType",
+  "significado": "Tipo de dispositivo",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": 0
+ },
+ {
+  "byte": 27,
+  "payload_offset": 18,
+  "mask": "0xF0",
+  "condicao": "valor>>4",
+  "campo": "screenShapeExpansion",
+  "significado": "Extensão de formato (2 => deviceShape=4)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": 0
+ },
+ {
+  "byte": 28,
+  "payload_offset": 19,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "supportEpCmd",
+  "significado": "Comandos de fone (cmd 0x25)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 28,
+  "payload_offset": 19,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "supportEpMsgRedSwitch",
+  "significado": "Fone: ponto vermelho de mensagem",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 28,
+  "payload_offset": 19,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportEpMsgNotify",
+  "significado": "Fone: notificação",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 28,
+  "payload_offset": 19,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "supportEpWorldTime",
+  "significado": "Fone: relógio mundial",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 28,
+  "payload_offset": 19,
+  "mask": "0x08",
+  "condicao": "!=0",
+  "campo": "supportEpRestart",
+  "significado": "Fone: reiniciar",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 28,
+  "payload_offset": 19,
+  "mask": "0x04",
+  "condicao": "!=0",
+  "campo": "supportEpShutdown",
+  "significado": "Fone: desligar",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 28,
+  "payload_offset": 19,
+  "mask": "0x02",
+  "condicao": "!=0",
+  "campo": "supportEpSMsgNotifyAll",
+  "significado": "Fone: notificar tudo",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 28,
+  "payload_offset": 19,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "supportEpBrightScreen",
+  "significado": "Fone: brilho",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 29,
+  "payload_offset": 20,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "supportEpVolume",
+  "significado": "Fone: volume",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 29,
+  "payload_offset": 20,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "supportDiyRotate",
+  "significado": "Rotação DIY",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 29,
+  "payload_offset": 20,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportSedentary30",
+  "significado": "Sedentarismo em passos de 30 min",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 29,
+  "payload_offset": 20,
+  "mask": "0x02",
+  "condicao": "!=0",
+  "campo": "is5610AlgSleep",
+  "significado": "Algoritmo de sono 5610 (04/10)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 29,
+  "payload_offset": 20,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "supportTemperatureLogbook",
+  "significado": "Diário de temperatura",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 30,
+  "payload_offset": 21,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "rem2Light5610",
+  "significado": "REM contado como leve (5610)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 30,
+  "payload_offset": 21,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportANC",
+  "significado": "ANC",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 30,
+  "payload_offset": 21,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "supportSquelch",
+  "significado": "Squelch/redução de ruído",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 30,
+  "payload_offset": 21,
+  "mask": "0x08",
+  "condicao": "!=0",
+  "campo": "supportWeather",
+  "significado": "Clima",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 30,
+  "payload_offset": 21,
+  "mask": "0x04",
+  "condicao": "!=0",
+  "campo": "supportCamera",
+  "significado": "Câmera remota",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 30,
+  "payload_offset": 21,
+  "mask": "0x02",
+  "condicao": "!=0",
+  "campo": "supportFindDevice",
+  "significado": "Encontrar dispositivo",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 31,
+  "payload_offset": 22,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "sleepMonitor",
+  "significado": "Monitoramento de sono",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 31,
+  "payload_offset": 22,
+  "mask": "0x78",
+  "condicao": "valor>>3",
+  "campo": "diytWatchFaceStyle",
+  "significado": "Estilo de mostrador DIY (4 bits)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": 0
+ },
+ {
+  "byte": 31,
+  "payload_offset": 22,
+  "mask": "0x04",
+  "condicao": "!=0",
+  "campo": "rem2Light",
+  "significado": "REM como leve",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 31,
+  "payload_offset": 22,
+  "mask": "0x02",
+  "condicao": "==0",
+  "campo": "handBright",
+  "significado": "Levantar-pulso (INVERTIDO: bit=0 -> suportado)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 31,
+  "payload_offset": 22,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "supportFmMtu",
+  "significado": "Relógio informa MTU (app envia 27/06)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 34,
+  "payload_offset": 25,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "supportPressure",
+  "significado": "Estresse/pressão",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 34,
+  "payload_offset": 25,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportTargetCalories",
+  "significado": "Meta de calorias",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 34,
+  "payload_offset": 25,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "supportTargetDistance",
+  "significado": "Meta de distância",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 34,
+  "payload_offset": 25,
+  "mask": "0x04",
+  "condicao": "!=0",
+  "campo": "supportHeartLowHigFlag",
+  "significado": "Alerta FC alta/baixa (app envia 03/08 no fim do sync)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 34,
+  "payload_offset": 25,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "supportKeySetSynOther",
+  "significado": "Sincronizar ajuste de teclas",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 35,
+  "payload_offset": 26,
+  "mask": "0x08",
+  "condicao": "!=0",
+  "campo": "supportOutFindPhone",
+  "significado": "Encontrar celular (externo)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 35,
+  "payload_offset": 26,
+  "mask": "0x02",
+  "condicao": "!=0",
+  "campo": "menstrualSwitch",
+  "significado": "Chave de ciclo menstrual",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 35,
+  "payload_offset": 26,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "powerSavingMode",
+  "significado": "Modo economia",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 36,
+  "payload_offset": 27,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "supportSportLinkageType",
+  "significado": "Tipos de esporte vinculados (04/0C)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 36,
+  "payload_offset": 27,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "supportHeadsetKEY",
+  "significado": "Teclas do fone",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 36,
+  "payload_offset": 27,
+  "mask": "0x08",
+  "condicao": "!=0",
+  "campo": "supportMessageReminder",
+  "significado": "Lembrete de mensagem",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 37,
+  "payload_offset": 28,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "supportMedicationReminder",
+  "significado": "Lembrete de remédio",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 37,
+  "payload_offset": 28,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportAllDayNotDisturbMode",
+  "significado": "Não perturbe o dia todo (02/34)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 37,
+  "payload_offset": 28,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "supportAllDayLightUp",
+  "significado": "Tela sempre acesa (02/37)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 37,
+  "payload_offset": 28,
+  "mask": "0x08",
+  "condicao": "!=0",
+  "campo": "findDevice",
+  "significado": "Encontrar dispositivo (variante)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 37,
+  "payload_offset": 28,
+  "mask": "0x04",
+  "condicao": "!=0",
+  "campo": "alarmBeanBit",
+  "significado": "Formato de alarme alternativo",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 38,
+  "payload_offset": 29,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportVideoRealtimeTrans",
+  "significado": "Vídeo em tempo real (cmd 0x2B)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 38,
+  "payload_offset": 29,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "supportVideoFaceSend",
+  "significado": "Mostrador em vídeo (cmd 0x2C)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 39,
+  "payload_offset": 30,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "supportVideoFaceShowHide",
+  "significado": "Mostrar/ocultar elementos do mostrador em vídeo",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 39,
+  "payload_offset": 30,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "supportPhotoAlbum",
+  "significado": "Álbum de fotos",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 39,
+  "payload_offset": 30,
+  "mask": "0x01",
+  "condicao": "==0",
+  "campo": "supportHeadSet",
+  "significado": "Fone (INVERTIDO: bit=0 -> suportado)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 40,
+  "payload_offset": 31,
+  "mask": "0x08",
+  "condicao": "==0",
+  "campo": "supportWakeonTouch",
+  "significado": "Acordar ao tocar (INVERTIDO)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 41,
+  "payload_offset": 32,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportGazeDistance/supportFitnessReminder",
+  "significado": "Olhar ao longe E lembrete de exercício (mesmo bit no código)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 41,
+  "payload_offset": 32,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "supportAITranslate",
+  "significado": "Tradução por IA",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 41,
+  "payload_offset": 32,
+  "mask": "0x08",
+  "condicao": "!=0",
+  "campo": "supportReadingReminder",
+  "significado": "Lembrete de leitura",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 41,
+  "payload_offset": 32,
+  "mask": "0x04",
+  "condicao": "!=0",
+  "campo": "supportTravelReminder",
+  "significado": "Lembrete de viagem",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 41,
+  "payload_offset": 32,
+  "mask": "0x02",
+  "condicao": "!=0",
+  "campo": "supportAiDial",
+  "significado": "Mostrador gerado por IA",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 41,
+  "payload_offset": 32,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "supportElectron",
+  "significado": "Crachá eletrônico (cmd 0x32)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 42,
+  "payload_offset": 33,
+  "mask": "0x08",
+  "condicao": "!=0",
+  "campo": "supportRGB565",
+  "significado": "RGB565",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 43,
+  "payload_offset": 34,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportVideoVoice",
+  "significado": "Vídeo com voz",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 43,
+  "payload_offset": 34,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "supportBackAI",
+  "significado": "IA em segundo plano (cmd 0x37)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 44,
+  "payload_offset": 35,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "supportPrAutoTest",
+  "significado": "Estresse automático",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 44,
+  "payload_offset": 35,
+  "mask": "0x04",
+  "condicao": "!=0",
+  "campo": "supportGETSDCard",
+  "significado": "Cartão SD",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 44,
+  "payload_offset": 35,
+  "mask": "0x02",
+  "condicao": "!=0",
+  "campo": "supportMedicineReminderMax",
+  "significado": "Limite de lembretes de remédio",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 44,
+  "payload_offset": 35,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "supportBarrage",
+  "significado": "Barragem/legenda (cmd 0x3A)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 45,
+  "payload_offset": 36,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "supportIntervalHeartRate",
+  "significado": "Zonas de FC no treino (04/11)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 45,
+  "payload_offset": 36,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportGetScreenTime",
+  "significado": "Tipos de tempo de tela (02/46)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 45,
+  "payload_offset": 36,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "supportNumberAlarms",
+  "significado": "Número máx. de alarmes (02/47)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 45,
+  "payload_offset": 36,
+  "mask": "0x08",
+  "condicao": "!=0",
+  "campo": "supportNumberSavedAlbum",
+  "significado": "Número de fotos no álbum (02/48)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 45,
+  "payload_offset": 36,
+  "mask": "0x04",
+  "condicao": "!=0",
+  "campo": "blockDailMarket",
+  "significado": "Bloquear loja de mostradores",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 46,
+  "payload_offset": 37,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "AIModelChoose",
+  "significado": "Escolha de modelo de IA",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 46,
+  "payload_offset": 37,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "AIModelXiaoXiang",
+  "significado": "Modelo de IA 'XiaoXiang'",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 47,
+  "payload_offset": 38,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "supportAIWake",
+  "significado": "Despertar por voz IA",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 47,
+  "payload_offset": 38,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "supportAIAlarmDate",
+  "significado": "Alarme por IA com data",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 47,
+  "payload_offset": 38,
+  "mask": "0x02",
+  "condicao": "!=0",
+  "campo": "supportEleMerge",
+  "significado": "Mesclagem (crachá)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 48,
+  "payload_offset": 39,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "supportHandwashReminder",
+  "significado": "Lembrete de lavar mãos (02/4A)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 48,
+  "payload_offset": 39,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "supportBPAutoTest",
+  "significado": "PA automática",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 48,
+  "payload_offset": 39,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportLessRepet",
+  "significado": "Menos repetição",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 48,
+  "payload_offset": 39,
+  "mask": "0x10",
+  "condicao": "!=0",
+  "campo": "supportAISimTranslate",
+  "significado": "Tradução simultânea IA",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 48,
+  "payload_offset": 39,
+  "mask": "0x08",
+  "condicao": "!=0",
+  "campo": "supportHRVAutoTest",
+  "significado": "VFC automática",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 48,
+  "payload_offset": 39,
+  "mask": "0x04",
+  "condicao": "!=0",
+  "campo": "supportTempAutoTest",
+  "significado": "Temperatura automática",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 48,
+  "payload_offset": 39,
+  "mask": "0x02",
+  "condicao": "!=0",
+  "campo": "supportSleepAutoTest",
+  "significado": "Sono automático",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 49,
+  "payload_offset": 40,
+  "mask": "0x01",
+  "condicao": "!=0",
+  "campo": "supportHrvFunction",
+  "significado": "Função VFC",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": false
+ },
+ {
+  "byte": 49,
+  "payload_offset": 40,
+  "mask": "0x80",
+  "condicao": "==0",
+  "campo": "supportEleShowDIY",
+  "significado": "Mostrar DIY no crachá (INVERTIDO)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": true
+ },
+ {
+  "byte": 50,
+  "payload_offset": 41,
+  "mask": "0x80",
+  "condicao": "!=0",
+  "campo": "supportRequestHRV",
+  "significado": "Pedir VFC",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": "ausente"
+ },
+ {
+  "byte": 50,
+  "payload_offset": 41,
+  "mask": "0x40",
+  "condicao": "!=0",
+  "campo": "supportHRVMeasurement",
+  "significado": "Medição de VFC",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": "ausente"
+ },
+ {
+  "byte": 50,
+  "payload_offset": 41,
+  "mask": "0x20",
+  "condicao": "!=0",
+  "campo": "supportMeiTuo",
+  "significado": "Métrica 'MeiTuo' (03/36)",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": "ausente"
+ },
+ {
+  "byte": 50,
+  "payload_offset": 41,
+  "mask": "0x02",
+  "condicao": "!=0",
+  "campo": "supportSimulateECG",
+  "significado": "ECG simulado",
+  "fonte": "NotifyWriteUtils.java:304-771",
+  "tf37_observado": "ausente"
+ }
+]

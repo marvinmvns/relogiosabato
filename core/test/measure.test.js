@@ -1,0 +1,67 @@
+// Testes dos decodificadores de medição com dados reais da captura e sintéticos.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  decodeDate2, decodeToday, decodeHourly, decodeHrHistory, decodeLive, decodeStatus, stats, measureCommand, MEASUREMENTS,
+} from '../measure.js';
+
+const fromHex = (s) => Uint8Array.from(s.match(/../g), (x) => parseInt(x, 16));
+
+test('data de 2 bytes da captura (04/01 começa com 35 6b)', () => {
+  assert.deepEqual(decodeDate2(0x35, 0x6b), { year: 2026, month: 11, day: 11, iso: '2026-11-11' });
+});
+
+test('atividade de hoje real: 0 passos, 0 m, 84 cal', () => {
+  const t = decodeToday(fromHex('000000000000000000000054'));
+  assert.equal(t.steps, 0);
+  assert.equal(t.distanceM, 0);
+  assert.equal(t.calories, 84);
+  assert.equal(t.kcal, 0.084);
+  assert.ok(t.plausible);
+});
+
+test('atividade de hoje sintética: 5432 passos, 3,9 km, 210 kcal', () => {
+  const t = decodeToday(Uint8Array.from([0, 0, 0x15, 0x38, 0, 0, 0x0f, 0x3c, 0, 0x03, 0x34, 0x50]));
+  assert.equal(t.steps, 5432);
+  assert.equal(t.distanceKm, 3.9);
+  assert.equal(t.kcal, 210);
+});
+
+test('passos por hora: 24 registros zerados da captura', () => {
+  const p = new Uint8Array(4 + 24 * 12);
+  p.set([0x35, 0x6b, 0x00, 0x18]);
+  p.set([0, 0, 0, 120], 4 + 9 * 12); // 120 passos às 9h
+  const h = decodeHourly(p);
+  assert.equal(h.date, '2026-11-11');
+  assert.equal(h.hours.length, 24);
+  assert.equal(h.hours[9].steps, 120);
+});
+
+test('histórico de frequência cardíaca: descarta abaixo de 30 bpm', () => {
+  const p = Uint8Array.from([
+    0x35, 0x6c, 0x00, 0x02,
+    0x00, 0x00, 0x8c, 0xa0, 0x01, 0x01, 0x00, 72, // 10:00, 72 bpm, automático
+    0x00, 0x00, 0x8c, 0xdc, 0x01, 0x00, 0x00, 20, // 20 bpm: descartado
+  ]);
+  const r = decodeHrHistory(p);
+  assert.equal(r.date, '2026-11-12');
+  assert.deepEqual(r.records, [{ time: '10:00', seconds: 36000, bpm: 72, mode: 1, auto: true }]);
+});
+
+test('valor ao vivo e estado', () => {
+  assert.deepEqual(decodeLive(Uint8Array.from([1, 76])), { type: 1, value: 76, name: 'frequência cardíaca', unit: 'bpm' });
+  assert.equal(decodeStatus(0x0f, Uint8Array.from([1])).text, 'medindo');
+  assert.equal(decodeStatus(0x99, Uint8Array.from([1])), null);
+  assert.equal(decodeStatus(0x0f, Uint8Array.from([2])).failed, true);
+});
+
+test('comando de medir FC é 06/04 com 1 e 0', () => {
+  const hr = MEASUREMENTS.find((m) => m.id === 'hr');
+  assert.deepEqual([measureCommand(hr, true).cmd, measureCommand(hr, true).key, measureCommand(hr, true).encode()], [6, 4, [1]]);
+  assert.deepEqual(measureCommand(hr, false).encode(), [0]);
+});
+
+test('estatísticas', () => {
+  assert.deepEqual(stats([70, 72, 74]), { n: 3, min: 70, max: 74, avg: 72, last: 74 });
+  assert.equal(stats([]), null);
+});

@@ -1,0 +1,626 @@
+{
+ "sequencia_conexao": [
+  {
+   "passo": "0 GATT: servicesDiscovered -> read 18A8/2AA8 (detecta DFU) -> requestMtu 450 (DFU) / 247 (normal) -> +1000ms notify 18AC/2AAC (ou 2AA8 em DFU)",
+   "cmd": null,
+   "key": null,
+   "payload": null,
+   "fonte": "ble/MBleManager.java:189-215"
+  },
+  {
+   "passo": "1 notify 2AAC ok, +1000 ms: getProductId",
+   "cmd": "0x14",
+   "key": "0x00",
+   "payload": "01",
+   "fonte": "function/home/activity/MainActivity.java:760-799; ble/utils/CommandUtils.java:841-843"
+  },
+  {
+   "passo": "2 getDeviceFeatures",
+   "cmd": "0x00",
+   "key": "0x00",
+   "payload": "00",
+   "fonte": "CommandUtils.java:249-251"
+  },
+  {
+   "passo": "3 getDeviceInfo",
+   "cmd": "0xF3",
+   "key": "0x00",
+   "payload": "",
+   "fonte": "CommandUtils.java:245-247"
+  },
+  {
+   "passo": "4 (resp 0x00, SYNCHRONIZE, isSupportHid) sendSystemVersion",
+   "cmd": "0x10",
+   "key": "0x00",
+   "payload": "[SDK_INT,00,00]",
+   "fonte": "ble/utils/NotifyWriteUtils.java:756-758; CommandUtils.java:721-723"
+  },
+  {
+   "passo": "4b (MTU) plataforma 1/2 -> requestMtu(410); isSupportFmMtu -> requestFmMtu",
+   "cmd": "0x27",
+   "key": "0x06",
+   "payload": "",
+   "fonte": "NotifyWriteUtils.java:749-751,765-769; CommandUtils.java:1204-1206"
+  },
+  {
+   "passo": "5 (ACK 0x10 ou isDeviceInfo) getDeviceNameVersion -> resp versao+projeto",
+   "cmd": "0x02",
+   "key": "0x17",
+   "payload": "",
+   "fonte": "NotifyWriteUtils.java:864-880,1935-1942; CommandUtils.java:845-847"
+  },
+  {
+   "passo": "6 bind (so se DEVICE_VERSION>=2); timeout 15 s -> disconnect",
+   "cmd": "0x08",
+   "key": "0x00",
+   "payload": "8 bytes ASCII hex (UUID aleatorio truncado, persistido)",
+   "fonte": "NotifyWriteUtils.java:1805-1838; CommandUtils.java:520-522"
+  },
+  {
+   "passo": "7 resp 0x08 [9]=1 primeiro vinculo /2 ja vinculado -> setUnit (se suportado); [9]=3 -> disconnect",
+   "cmd": "0x02",
+   "key": "0x12",
+   "payload": "[dist 0/1, temp 0/1]",
+   "fonte": "NotifyWriteUtils.java:1176-1236; CommandUtils.java:800-802"
+  },
+  {
+   "passo": "8 (ACK 0x02/0x12, ver>=3) setTimeZone",
+   "cmd": "0x09",
+   "key": "0x00",
+   "payload": "[sinal 0=+/1=-, |offset horas|]",
+   "fonte": "NotifyWriteUtils.java:1855-1862; CommandUtils.java:534-537"
+  },
+  {
+   "passo": "9 (ACK 0x09) sendSystemTime",
+   "cmd": "0x02",
+   "key": "0x08",
+   "payload": "4B BE bitpacked: ano-2000(6) mes(4) dia(5) hora(5) min(6) seg(6)",
+   "fonte": "NotifyWriteUtils.java:1915-1919; CommandUtils.java:501-510"
+  },
+  {
+   "passo": "10 (ACK 0x02/0x08) setUserInfo",
+   "cmd": "0x02",
+   "key": "0x04",
+   "payload": "sexo(1)|idade(7), altura(9b), peso(8b) em 4 bytes",
+   "fonte": "ble/infoutils/BleDataUtils.java:1226-1236; CommandUtils.java:253-271"
+  },
+  {
+   "passo": "10b nome do usuario (se suportado)",
+   "cmd": "0x02",
+   "key": "0x20",
+   "payload": "[len][UTF-8]",
+   "fonte": "CommandUtils.java:857-871"
+  },
+  {
+   "passo": "11 (ACK 0x02/0x04) setStepTarget",
+   "cmd": "0x02",
+   "key": "0x05",
+   "payload": "int32 BE (padrao 5000)",
+   "fonte": "BleDataUtils.java:1210-1216; CommandUtils.java:273-275"
+  },
+  {
+   "passo": "12 (ACK 0x02/0x05) getSettingInfo",
+   "cmd": "0x02",
+   "key": "0x06",
+   "payload": "01",
+   "fonte": "BleDataUtils.java:1218-1224; CommandUtils.java:277-279"
+  },
+  {
+   "passo": "13 (resp 0x02/0x06) setLanguage se diferente do telefone",
+   "cmd": "0x02",
+   "key": "0x01",
+   "payload": "[codigo idioma]",
+   "fonte": "NotifyWriteUtils.java:995-1018"
+  },
+  {
+   "passo": "14 syncProcess: getFaceCode -> resp 0x0B/0x09 -> getCustomizeFaceInfo -> resp 0x0B/0x05",
+   "cmd": "0x0B",
+   "key": "0x01 / 0x04",
+   "payload": "01",
+   "fonte": "NotifyWriteUtils.java:1840-1846,1238-1262; CommandUtils.java:681-687"
+  },
+  {
+   "passo": "15 syncData (relogio responde 0x01/0x02 inicio ... 0x01/0x03 fim)",
+   "cmd": "0x01",
+   "key": "0x00",
+   "payload": "01",
+   "fonte": "NotifyWriteUtils.java:772-863,1785-1787; CommandUtils.java:281-283"
+  },
+  {
+   "passo": "16 apos fim do sync: pedidos condicionais (bateria, alarmes, DND, video face 0x2C/03, badge 0x32/01, menstrual, tempo de tela, EP...) e createBond",
+   "cmd": null,
+   "key": null,
+   "payload": null,
+   "fonte": "NotifyWriteUtils.java:784-860"
+  },
+  {
+   "passo": "17 ocioso ~5 s: getOtaUniqueCode -> getOtaProductCode -> OTA_INFO_READY",
+   "cmd": "0x0C",
+   "key": "0x00 / 0x01",
+   "payload": "01",
+   "fonte": "MainActivity.java:158-168; BleDataUtils.java:1436-1446; CommandUtils.java:697-703"
+  },
+  {
+   "passo": "18 apos ID do algoritmo (cmd 0x04 key 24, hipotese) -> HTTP GoMore -> envia chave",
+   "cmd": "0x04",
+   "key": "0x19",
+   "payload": "[01, len, chave ASCII]",
+   "fonte": "BleDataUtils.java:251-257; CommandUtils.java:1489-1497"
+  },
+  {
+   "passo": "ACK do app a todo DF recebido",
+   "cmd": "FD",
+   "key": "(espelha CMD/KEY)",
+   "payload": "FD 00 06 SUM CMD VER KEY 00 01 status(0 ok / 3 soma errada)",
+   "fonte": "ble/utils/AckPackageConfigUtils.java:5-7; NotifyWriteUtils.java:295-298,1781"
+  }
+ ],
+ "ota_opcodes": [
+  {
+   "protocolo": "DF (18AC)",
+   "opcode": "0x20/0x01",
+   "nome": "requestOTAInfo",
+   "payload": "",
+   "resposta": "cmd 0x20: versao, nome, unique_code=hex(payload[9..])",
+   "fonte": "CommandUtils.java:849-851; NotifyWriteUtils.java:1411-1430"
+  },
+  {
+   "protocolo": "DF (18AC)",
+   "opcode": "0x20/0x02",
+   "nome": "requestStartOTA",
+   "payload": "01",
+   "resposta": "0x20/0x02 [9]: 1 bateria baixa, 2 musica, 3 chamada, outro = inicia (hipotese: reboot em DFU)",
+   "fonte": "CommandUtils.java:853-855; NotifyWriteUtils.java:1399-1410"
+  },
+  {
+   "protocolo": "DF (18AC)",
+   "opcode": "0x0C/0x00..0x03",
+   "nome": "OTA legado: unique code / product code / versoes (8x uint16) / status",
+   "payload": "01 ou 16 B",
+   "resposta": "cmd 0x0C",
+   "fonte": "CommandUtils.java:697-711; BleDataUtils.java:1436-1471"
+  },
+  {
+   "protocolo": "D5 legado (OTA_SERVICE: 1106/1108/1107 se is5610Type, senao 18A8/2AA9/2AA8)",
+   "opcode": "OP 0x01",
+   "nome": "START",
+   "payload": "[MTU-3 BE16][tamanho BE32]",
+   "resposta": "OP 0x81: [8..9] frameSize, [10..11] intervalo ms, [12] quadros/grupo, [13] timeout x5s; 9 B = erro (0x6B/0x0D)",
+   "fonte": "ble/ota/OTACommandUtils.java:49-74; OTANotifyWriteUtils.java:159-188"
+  },
+  {
+   "protocolo": "D6 legado",
+   "opcode": "D6",
+   "nome": "DATA",
+   "payload": "D6 + (frameSize-1) bytes",
+   "resposta": "sem ACK por quadro",
+   "fonte": "ble/ota/OTAUtils.java:234-265"
+  },
+  {
+   "protocolo": "D5 legado",
+   "opcode": "OP 0x02",
+   "nome": "GROUP_CRC",
+   "payload": "[crc8 poly 0x31 init 0 do grupo]",
+   "resposta": "OP 0x82 [5]=0 ok",
+   "fonte": "OTACommandUtils.java:76-78; OTANotifyWriteUtils.java:189-199"
+  },
+  {
+   "protocolo": "D5 legado",
+   "opcode": "OP 0x03",
+   "nome": "FILE_CRC",
+   "payload": "[crc8 do arquivo]",
+   "resposta": "OP 0x83 [5]=0 fim",
+   "fonte": "OTAUtils.java:308-314; OTANotifyWriteUtils.java:200-210"
+  },
+  {
+   "protocolo": "D5 legado",
+   "opcode": "OP 0x04",
+   "nome": "REBOOT",
+   "payload": "",
+   "resposta": "-",
+   "fonte": "OTACommandUtils.java:80-82; OTAUtils.java:331-333; MultipleOTAUtils.java:87"
+  },
+  {
+   "protocolo": "Cus5610 (DFU 18A8: write 2AA9, notify 2AA8)",
+   "opcode": "FUN 0x01",
+   "nome": "GET_FIRMWARE_OTA_INFO",
+   "payload": "",
+   "resposta": "D6 01 ..: versao, projeto, unique_code",
+   "fonte": "Cus5610CommandUtils.java:100; Cus5610OTANotifyWriteUtils.java:212-228"
+  },
+  {
+   "protocolo": "Cus5610",
+   "opcode": "FUN 0x0F",
+   "nome": "GET_VERSION",
+   "payload": "10 00",
+   "resposta": "string de versao; ativa somas par/impar",
+   "fonte": "Device5610OtaActivity.java:437,608; Cus5610OTANotifyWriteUtils.java:248-255"
+  },
+  {
+   "protocolo": "Cus5610",
+   "opcode": "FUN 0x03",
+   "nome": "PARTITION_DIST",
+   "payload": "n x [part_id][addr BE32][len BE32] (vindos do servidor)",
+   "resposta": "fun 03 -> inicia bins",
+   "fonte": "Cus5610OTAUtils.java:90-110"
+  },
+  {
+   "protocolo": "Cus5610",
+   "opcode": "FUN 0x02",
+   "nome": "4K_CHECK (pre-checagem 40K e por bloco)",
+   "payload": "10 x soma32 (ou 10 x [par32][impar32]); ou soma do bloco",
+   "resposta": "40K: [9]=0xFF pula grupo, n = retoma; 4K: valor ignorado pelo app",
+   "fonte": "Cus5610OTAUtils.java:186-234,492-518"
+  },
+  {
+   "protocolo": "Cus5610",
+   "opcode": "FUN 0x04-0x09",
+   "nome": "DADOS da area (codigo, audio, fontes, imagens, parametros, mostrador) = part_id",
+   "payload": "IDX=bloco 4K, SUB=pedaco, ate MTU-14 B",
+   "resposta": "callback de escrita (sem ACK)",
+   "fonte": "Cus5610OTAUtils.java:205-217; Cus5610CommandUtils.java:93-99"
+  },
+  {
+   "protocolo": "Cus5610",
+   "opcode": "FUN 0x0A",
+   "nome": "TOTAL_CHECK",
+   "payload": "soma32 BE do arquivo",
+   "resposta": "[3]==1 ok -> proximo bin",
+   "fonte": "Cus5610OTAUtils.java:247,521-539"
+  },
+  {
+   "protocolo": "Cus5610",
+   "opcode": "FUN 0x0E",
+   "nome": "REBOOT",
+   "payload": "",
+   "resposta": "-",
+   "fonte": "Cus5610OTAUtils.java:524"
+  },
+  {
+   "protocolo": "Cus5610",
+   "opcode": "FUN 0x0B/0x0C/0x0D",
+   "nome": "GET_MTU/SET_PACKAGE/FRAME_TOTAL (nao usados)",
+   "payload": "",
+   "resposta": "",
+   "fonte": "Cus5610CommandUtils.java:101-106"
+  },
+  {
+   "protocolo": "Cus5610 quadro",
+   "opcode": "D5 FUN 01 01 IDX_H IDX_L SUB SUM_H SUM_L LEN_H LEN_L PAYLOAD",
+   "nome": "formato",
+   "payload": "SUM16 = soma(cabecalho c/ SUM=0)+soma(payload)",
+   "resposta": "resposta D6, [3]=status 1 ok / 2..10 erros",
+   "fonte": "Cus5610CommandUtils.java:109-135; Cus5610OTANotifyWriteUtils.java:155-197"
+  }
+ ],
+ "endpoints": [
+  {
+   "url_sem_segredos": "https://ota.lianhezhuli.com/api/hry/get_update",
+   "metodo": "GET",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "unique_code"
+   ],
+   "finalidade": "OTA Bluetrum/5610 (bin_list com part_id/part_addr/part_len)"
+  },
+  {
+   "url_sem_segredos": "https://ota.lianhezhuli.com/api/ota/get_update",
+   "metodo": "GET",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "unique_code",
+    "product_code"
+   ],
+   "finalidade": "OTA legado"
+  },
+  {
+   "url_sem_segredos": "https://ota.lianhezhuli.com/api/ota/down_finish",
+   "metodo": "POST",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "authcode",
+    "ota_id",
+    "bin_id",
+    "version",
+    "after_version",
+    "user_uid"
+   ],
+   "finalidade": "telemetria de OTA ok"
+  },
+  {
+   "url_sem_segredos": "https://ota.lianhezhuli.com/api/ota/down_error",
+   "metodo": "POST",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "authcode",
+    "ota_id",
+    "bin_id",
+    "version",
+    "after_version",
+    "user_uid",
+    "msg"
+   ],
+   "finalidade": "telemetria de OTA erro"
+  },
+  {
+   "url_sem_segredos": "<binFile/URL de mostrador vindo do servidor>",
+   "metodo": "GET (streaming)",
+   "parametros": [],
+   "finalidade": "download de firmware/mostrador (sem verificacao de hash)"
+  },
+  {
+   "url_sem_segredos": "https://api.about.fund/api/dial/get_list",
+   "metodo": "GET",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "authcode",
+    "binsize",
+    "feature",
+    "format_id",
+    "rid",
+    "shape",
+    "page",
+    "limit",
+    "is_payment"
+   ],
+   "finalidade": "lista de mostradores online"
+  },
+  {
+   "url_sem_segredos": "https://api.about.fund/api/dial/get_detail",
+   "metodo": "GET",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "authcode",
+    "dial_id (hipotese)"
+   ],
+   "finalidade": "detalhe de mostrador"
+  },
+  {
+   "url_sem_segredos": "https://api.about.fund/api/dial_cate/get_dials",
+   "metodo": "GET",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "authcode"
+   ],
+   "finalidade": "mostradores por categoria"
+  },
+  {
+   "url_sem_segredos": "https://api.about.fund/api/census/add_dial_down",
+   "metodo": "POST",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "authcode",
+    "dial_id"
+   ],
+   "finalidade": "contagem de download"
+  },
+  {
+   "url_sem_segredos": "https://api.about.fund/api/custom_idpic/get_idpic",
+   "metodo": "GET",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "authcode",
+    "custom_code",
+    "product_code",
+    "rid",
+    "shape"
+   ],
+   "finalidade": "imagem do aparelho"
+  },
+  {
+   "url_sem_segredos": "https://api.about.fund/api/member_devices/bind_mac",
+   "metodo": "POST",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "authcode",
+    "mac",
+    "name",
+    "model"
+   ],
+   "finalidade": "vincular relogio a conta"
+  },
+  {
+   "url_sem_segredos": "https://api.about.fund/api/health_<tipo>/add | add_history",
+   "metodo": "POST",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "authcode",
+    "series de saude"
+   ],
+   "finalidade": "upload de FC/PA/SpO2/glicose/sono/passos/menstrual"
+  },
+  {
+   "url_sem_segredos": "https://api.about.fund/api/sport_device/add",
+   "metodo": "POST",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "authcode",
+    "sport_type",
+    "duration",
+    "calorie",
+    "step",
+    "distance",
+    "bpm_list",
+    "device_mac",
+    "device_name",
+    "insert_time"
+   ],
+   "finalidade": "treinos"
+  },
+  {
+   "url_sem_segredos": "https://api.about.fund/api/guard_locus/add",
+   "metodo": "POST",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "authcode",
+    "insert_time",
+    "lat",
+    "lon",
+    "position"
+   ],
+   "finalidade": "localizacao (guardiao)"
+  },
+  {
+   "url_sem_segredos": "https://api.about.fund/api/log_device/push_log",
+   "metodo": "POST",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "authcode",
+    "device_model",
+    "error_code",
+    "error_msg",
+    "phone_model",
+    "system"
+   ],
+   "finalidade": "log de erro"
+  },
+  {
+   "url_sem_segredos": "https://api.about.fund/api/log_app/push_log",
+   "metodo": "POST",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "json_log"
+   ],
+   "finalidade": "log do app"
+  },
+  {
+   "url_sem_segredos": "https://api.about.fund/api/census/add_member_life",
+   "metodo": "POST",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "authcode",
+    "app_type",
+    "app_version"
+   ],
+   "finalidade": "telemetria"
+  },
+  {
+   "url_sem_segredos": "https://api.about.fund/api/login_anonymous/login (e login_account/google/qicq/wechat/renew)",
+   "metodo": "POST",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)"
+   ],
+   "finalidade": "autenticacao"
+  },
+  {
+   "url_sem_segredos": "https://api.about.fund/api/xiaoxiang/active",
+   "metodo": "POST",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "authcode",
+    "device_name=MD5(<segredo>+MAC)",
+    "project",
+    "product_code"
+   ],
+   "finalidade": "ativacao de IA terceirizada"
+  },
+  {
+   "url_sem_segredos": "https://oil.mtwowe.com/api/weather/get_daily_weather | get_current_weather",
+   "metodo": "GET",
+   "parametros": [
+    "appid=<segredo no app>",
+    "lang",
+    "nonce",
+    "timestamp",
+    "sign=MD5(chaves ordenadas k=v& sem vazios/'0' + key=<segredo no app>)",
+    "lat",
+    "lon",
+    "city"
+   ],
+   "finalidade": "clima"
+  },
+  {
+   "url_sem_segredos": "https://saas-api.gomore.club/api/firmware/key/get",
+   "metodo": "POST multipart",
+   "parametros": [
+    "client_id=<segredo no app>",
+    "client_secret=<segredo no app>",
+    "device_id (vindo do relogio)"
+   ],
+   "finalidade": "licenca do algoritmo GoMore enviada ao relogio (0x04/0x19)"
+  },
+  {
+   "url_sem_segredos": "https://api.elejoai.cn/... , https://lang.elejoai.cn:8002/v1/transcribe/audio, https://obtune-ai-auth.elejoai.cn/",
+   "metodo": "POST",
+   "parametros": [
+    "device_id",
+    "product_code",
+    "token/x-app-key/x-app-secret (<segredo no app>)",
+    "audio/texto"
+   ],
+   "finalidade": "IA de voz/traducao/chat (SDK elejo Obtune)"
+  }
+ ]
+}

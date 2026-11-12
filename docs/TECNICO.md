@@ -1,0 +1,216 @@
+# Relógio Sabatinho: documento técnico
+
+Aplicativo e protocolo do relógio/pulseira **TF37 Pro** (app oficial Podsfine,
+`com.lianhezhuli.podsFine` 1.2.3). Estudo pessoal de interoperabilidade.
+
+Níveis de evidência usados aqui: **confirmado** (visto em captura ou no relógio real),
+**análise estática** (código descompilado do Podsfine) e **hipótese**.
+
+## 1. Visão geral
+
+```
+                ┌────────────── core/ (JavaScript puro, testado em Node) ─────────────┐
+                │ protocol.js  quadros DF/FD, checksum, ACK, remontagem, hora          │
+                │ commands.js  catálogo de comandos extraído do Podsfine (+ parsers)   │
+                │ measure.js   decodificadores de medição (FC, passos, histórico)      │
+                │ session.js   conexão, notificações, ACK, envio, espera de resposta   │
+                │ recorder.js  registro JSONL de tudo                                  │
+                │ suite.js     "Testar tudo" e relatório                               │
+                │ ui/          interface compartilhada (HTML/CSS/JS)                   │
+                └──────────────────────────────┬──────────────────────────────────────┘
+                     adaptadores ble + store   │
+          ┌────────────────────────────────────┴───────────────────────────┐
+  apps/mobile (Android, Capacitor 8)                    apps/desktop (Electron 45)
+  ble: @capacitor-community/bluetooth-le                ble: Web Bluetooth do Chromium
+  store: @capacitor/filesystem + share                  store: arquivos via IPC (Node fs)
+```
+
+O núcleo não conhece a plataforma. Cada app fornece dois adaptadores:
+
+| Adaptador | Métodos |
+|---|---|
+| `ble` | `initialize`, `requestDevice`, `connect`, `disconnect`, `getServices`, `startNotifications`, `read`, `writeWithoutResponse`, `scan` (opcional) |
+| `store` | `start(nome)`, `append(texto)`, `writeFile(nome, texto)`, `share` (opcional) |
+
+## 2. Hardware e identidade (confirmado)
+
+| Item | Valor |
+|---|---|
+| Modelo | TF37PRO, "Smart Band", FCC ID `2BD94-TF37PRO`, Shenzhen Hongsheng wang Technology |
+| Firmware | `V1.8`, projeto `Z16_TF37Pro_HSW[TF37Pro]_Style1_Podsfine` (resposta `02/17`) |
+| Chip | **Bluetrum AB569X** (autoidentificação na resposta `20/01`) |
+| Nome BLE | `TF37Pro` |
+| Anúncio | manufacturer data, company `0x314C`: endereço do relógio + `00 01 07` (modo normal termina em `00:01`; em DFU, `56:10`) |
+| Recursos (`00/00`) | G-sensor, frequência cardíaca, sedentarismo, 24h, protocolo de mensagem novo, alarme, unidades, relato de bateria; plataforma 10 |
+
+## 3. GATT
+
+| Serviço | Característica | Handle (valor) | Uso |
+|---|---|---|---|
+| `18AC` | `2AAD` write / write-without-response | `0x000A` | app → relógio (comandos e ACKs) |
+| `18AC` | `2AAC` read / notify | `0x0007` | relógio → app |
+| `1106` | `1108` write | — | **Transferência de arquivos D5/D6 (mostradores, contatos, álbum). Nunca escrever.** |
+| `18A8` | `2AA9` write / `2AA8` notify | — | Firmware (`Cus5610OTAUtils`). Só existe em modo DFU, depois de `20/02`. Nunca escrever. |
+| `1106` | `1107` notify | — | OTA: o app só escuta |
+| `180F` | `2A19` read / notify | `0x0002`+1 | bateria padrão (lê `0x00` neste relógio) |
+
+MTU: o Podsfine pede `0xF7` e depois `0x64` (100). Escrita sem resposta.
+
+## 4. Quadros DF/FD (confirmado: 374 quadros em captura + sessões do app)
+
+```
+DF  LEN_H LEN_L  SUM  CMD  VER  KEY  PLEN_H PLEN_L  PAYLOAD…
+ 0    1     2     3    4    5    6     7      8       9…
+LEN  = tamanho do payload + 5          (total = LEN + 4)
+SUM  = soma de todos os outros bytes do quadro, módulo 256
+VER  = 0x04 neste relógio (o app começa com 0x00 e adota o valor recebido)
+
+ACK: FD 00 06 SUM CMD VER KEY 00 01 STATUS      (STATUS 0 = ok, 3 = checksum inválido)
+```
+
+- O app confirma **todo** quadro DF recebido com um ACK `FD`, como o Podsfine.
+- Quadros maiores que o MTU chegam em vários pedaços: o primeiro começa com `DF` e
+  declara o tamanho total; os seguintes são continuação. `Reassembler` junta.
+- Diferenças em relação ao HryFine documentado em `develmts/Jieli-watch-research`:
+  mesmo formato, mas outro canal GATT, ACK com 10 bytes e OTA em `20/xx` em vez de `13/xx`.
+
+Exemplo real (identidade, versão 0, como o app oficial envia):
+
+```
+df 00 05 d7 f3 00 00 00 00
+            └─ CMD F3, KEY 00, payload vazio; SUM = df+00+05+f3+00+00+00+00 = 0x1d7 → d7
+```
+
+## 5. Comandos
+
+O catálogo completo, com layout de payload, risco e resposta de cada comando, está em
+[COMANDOS.md](COMANDOS.md) e em código em `core/commands.js` (extraído de
+`ble/utils/CommandUtils.java`). Classes de risco:
+
+| Risco | Exemplos | No app |
+|---|---|---|
+| seguro | leituras, encontrar relógio, medições, câmera, notificação de teste | enviado; entra no "Testar tudo" |
+| altera-config | hora, idioma, unidades, alarmes, perfil, não perturbe | enviado só por ação manual ou com a opção ligada |
+| perigoso | `20/02` iniciar OTA, `02/09` reset de fábrica, `08/xx` vínculo, reinício (`06/0A`), desligar (`06/09`), apagar dados, transferências, códigos pessoais; e qualquer método com restart/shut/delete/reset/format/bind no nome | **nunca enviado**: bloqueado por `risk` e por `isBlocked` no protocolo |
+
+## 6. Medições (análise estática, parcialmente confirmado)
+
+Inteiros multibyte são big-endian. Datas de 2 bytes (`BleUtils.getDateBean`):
+`ano = 2000 + ((b0 & 0x7f) >> 1)`, `mês = ((b0 & 1) << 3) + (b1 >> 5)`, `dia = b1 & 31`.
+
+| Quadro | Conteúdo | Unidades |
+|---|---|---|
+| `06/04` + `01`/`00` | iniciar/parar medição de frequência cardíaca (`06/06` SpO2, `06/05` pressão, `06/12` estresse) | — |
+| `03/0F` | estado da medição de FC: `1` medindo, `0` parado (`03/12` SpO2, `03/15` pressão, `03/29` estresse) | — |
+| `03/2A` | **valor ao vivo**: `[tipo, valor]`; tipo 1 = FC, 2 = SpO2 | bpm, % |
+| `03/00` | histórico de FC: data(2) qtd(2) + registros de 8 bytes `seg(4) modo(1) auto(1) ?(1) bpm(1)`; o app descarta < 30 bpm | segundos do dia, bpm |
+| `04/00` | hoje: passos(4) distância(4) calorias(4) | passos, **metros**, **cal** (÷1000 = kcal) |
+| `04/01` | por hora: data(2) qtd(2) + 24 registros de 12 bytes (passos, distância, calorias) | idem |
+| `04/02` | sono: data(2) qtd(2) início(2) + segmentos | minutos |
+| `02/03` + `01`/`00` | liga/desliga o **envio automático** de dados de saúde (não é medição) | — |
+
+Correção registrada: o `04/00` da captura (`…00 54`) é **84 cal**, não 84 bpm, como
+chegamos a supor antes de ler `handleSportData`.
+
+## 7. Registro (JSONL)
+
+Uma linha por evento, em ordem, gravada à medida que acontece:
+
+| Campo | Significado |
+|---|---|
+| `t`, `seq` | horário UTC e sequência |
+| `dir` | `rx` (veio do relógio) ou `tx` (o app enviou) |
+| `channel` | `2AAC-bruto` (pedaço como chegou), `2AAC` (quadro remontado), `2AAD`, `2A19`, `1107-OTA`, `anuncio` |
+| `kind`, `cmd`, `key`, `version`, `status` | campos do quadro |
+| `valid` | checksum e tamanho conferem |
+| `hex`, `payload` | bytes |
+| `summary`, `text`, `parsed` | resumo, interpretação e campos decodificados pelo catálogo |
+| `type` | `sessao`, `evento`, `erro`, `gatt`, `anuncio`, `medicao`, `teste`, `suite` |
+
+Onde fica:
+
+- Android: `Android/data/com.relogiosabatinho.app/files/sessoes/` (puxar com `adb pull` ou botão Exportar).
+- Desktop: `Documentos/RelogioSabatinho/sessoes/` (botão Abrir pasta).
+- Cada "Testar tudo" também grava `<sessão>-relatorio.md` e `<sessão>-relatorio.json`.
+
+## 8. "Testar tudo"
+
+`core/suite.js` percorre o catálogo na ordem leituras → saúde → ações → notificações →
+mídia → configurações. Para cada comando: envia, espera até 3 s por ACK `FD` do mesmo
+`cmd/key` ou resposta `DF` do mesmo `cmd`, e classifica em **passou**, **recusou**
+(ACK ≠ 0), **sem resposta**, **erro**, **bloqueado** (perigoso) ou **pulado** (altera
+configuração com a opção desligada). Comandos que ligam medição contínua ficam 20 s
+ligados contando pacotes.
+
+### Regravação de configurações (testa sem alterar)
+
+`core/settings.js` interpreta a resposta `02/06` (`BleDataUtils.handleSettingInfo`):
+bloco fixo + campos com etiqueta. Valores reais do TF37 Pro em 2026-11-12:
+
+| Campo | Posição no payload | Valor |
+|---|---|---|
+| perfil (sexo, altura, peso, idade…) | 0–5 | `01 aa 41 19 01 02` (não interpretado) |
+| meta de passos | 6–9 (u32) | 5000 |
+| levantar o pulso para acender | 11 | 0 (desligado) |
+| idioma | 12 | 0 |
+| idiomas suportados | 13–16 (ou 13–17 se os recursos pedirem 5 bytes) | `80 00 00 00` |
+| envio automático de esporte / saúde | 17 / 18 | 0 / 1 |
+| etiqueta `04` sono | 6 bytes | ligado, 22:00–08:00 |
+| etiqueta `05` pulso de uso | 2 bytes | 1 |
+| etiqueta `06` FC automática | 9 bytes | ligada, a cada 30 min, 00:00–23:59 |
+| etiqueta `07` sedentarismo | 9 bytes | desligado, 45 min, 8h–22h, repetição `0xF8` |
+
+No "Testar tudo", `handBright`, `setLanguage`, `setStepTarget`, `setRealtimeSport`,
+`setRealtimeHealth` e `sendWearing` são enviados com **o valor lido**; no fim a suíte lê
+`02/06` de novo e confere que nada mudou (teste "Configurações inalteradas após regravar").
+Os demais comandos de configuração só rodam com a opção "incluir comandos que alteram
+configurações", e alteram o relógio de verdade.
+
+### Incidente de 2026-11-12: desconexão após a notificação no protocolo antigo
+
+Na segunda execução, logo depois de `sendMsg` (`0A/00` no protocolo **antigo**, sem byte de
+tipo), o relógio parou de responder: `sendMsgNewProtocol` e `sendDeleteMsg` ficaram sem
+resposta e o link caiu por timeout de supervisão (`reason 8`) 10 s depois. O relógio voltou
+a anunciar normalmente (modo normal, não DFU). Ele declara o protocolo de mensagem novo, e a
+bateria estava abaixo de 10%, então a causa não é certa. Por precaução `sendMsg` passou a
+**perigoso**, e a suíte agora para quando o relógio desconecta.
+
+## 9. Compilar
+
+Requisitos: Node 22+ (testado com 24), JDK 21, Android SDK 36.
+
+```sh
+cd core && npm test                                     # protocolo, medições, catálogo
+cd apps/mobile && npm ci && npm run android             # APK debug
+adb install -r apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+cd apps/desktop && npm ci && npm start                  # roda no desktop
+npm run dist:linux | dist:win | dist:mac                # pacotes (cada um no seu sistema)
+```
+
+Versões fixadas (publicadas há pelo menos duas semanas na data do build): Capacitor
+8.6.0, bluetooth-le 8.3.0, filesystem 8.1.5, share 8.0.3, Vite 8.3.5, Electron 45.1.0,
+electron-builder 26.18.1, Bricolage Grotesque 5.3.0.
+
+Notas de plataforma:
+
+- **Android 11**: o scan BLE exige permissão de localização, pedida ao conectar. Falhas
+  `GATT 133`/`reason 62` são comuns; o app tenta conectar até 4 vezes.
+- **Linux (desktop)**: Web Bluetooth do Chromium precisa de BlueZ e da flag
+  `enable-experimental-web-platform-features` (já ligada em `main.cjs`).
+- **Windows**: Web Bluetooth funciona com adaptador BLE e Windows 10+.
+- **macOS**: requer a permissão de Bluetooth (`NSBluetoothAlwaysUsageDescription` já
+  declarada) e assinatura para distribuição.
+- O relógio aceita **uma conexão por vez**: feche o Podsfine antes.
+- `npm audit` aponta vulnerabilidades moderadas na cadeia do electron-builder
+  (ferramenta de build, não empacotada no app).
+
+## 10. Segurança e limites
+
+- Nada é escrito no canal de OTA `1108`; `20/02`, `02/09` e `08/xx` são bloqueados em
+  duas camadas (catálogo e protocolo).
+- Material do fabricante (APK, código descompilado, capturas) fica em `private/`, fora
+  do git.
+- O comando `04/19` carrega uma string que parece um token do app oficial: o catálogo
+  documenta a estrutura, nunca um valor real.
+- Código-fonte do firmware não é recuperável; ver [PROXIMOS_PASSOS.md](PROXIMOS_PASSOS.md)
+  para os caminhos de firmware (binário) e seus riscos.
