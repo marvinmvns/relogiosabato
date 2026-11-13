@@ -1,3 +1,4 @@
+import './cyber.css';
 // Interface do Relógio Sabatinho, compartilhada entre Android e desktop.
 // A plataforma injeta: ble (adaptador Bluetooth), store (gravação de arquivos) e
 // platform { name, canScan, canShare }.
@@ -6,6 +7,7 @@ import { Recorder } from '../recorder.js';
 import { buildPlan, runSuite, reportMarkdown } from '../suite.js';
 import { hex } from '../protocol.js';
 import { createMeasure } from './measure.js';
+import { mountFitness, mountAppearance } from './fitness.js';
 import { mountProfile } from './profile.js';
 
 const GROUPS = {
@@ -42,27 +44,29 @@ const h = (html) => {
 
 export function mountApp({ root, ble, store, platform, commands, responses, extraTabs = [] }) {
   const TABS = [
-    ...['relogio', 'medir', 'comandos', 'testes', 'registro'].map((id) => ({ id, label: { relogio: 'Relógio', medir: 'Medir', comandos: 'Comandos', testes: 'Testes', registro: 'Registro' }[id], icon: ICONS[id] })),
+    { id: 'hoje', label: 'Hoje', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10l9-7 9 7v11h-6v-7H9v7H3z"/></svg>' },
+    ...['relogio', 'medir', 'comandos', 'testes', 'registro'].map((id) => ({ id, label: { relogio: 'Relógio', medir: 'Saúde', comandos: 'Comandos', testes: 'Testes', registro: 'Registro' }[id], icon: ICONS[id] })),
     ...extraTabs,
   ];
   const ui = {};
   const state = { logFilter: 'tudo', logSearch: '', group: 'todos', query: '', running: null };
 
   root.innerHTML = `
-    <div class="shell">
+    <div class="shell" data-current="hoje">
       <header class="topbar">
-        <h1 class="brand">Relógio Sabatinho<span>TF37 Pro no ${esc(platform.name)}</span></h1>
+        <h1 class="brand"><b class="brand-mark" aria-hidden="true">s<span>↗</span></b><span class="brand-name">sabatinho<small>NEON / FIT SYSTEM</small></span></h1>
         <span class="pill" id="pill" data-state="off">desconectado</span>
       </header>
 
-      <nav class="tabs" role="tablist" style="--tab-count:${TABS.length}">
+      <nav class="tabs" role="tablist" aria-label="Navegação principal" style="--tab-count:${TABS.length}">
         ${TABS.map((t, i) => `
-          <button role="tab" data-view="${t.id}" aria-selected="${i === 0}">${t.icon}<span>${esc(t.label)}</span></button>`).join('')}
+          <button role="tab" id="tab-${t.id}" aria-controls="panel-${t.id}" tabindex="${i === 0 ? 0 : -1}" data-view="${t.id}" aria-selected="${i === 0}">${t.icon}<span>${esc(t.label)}</span></button>`).join('')}
       </nav>
 
-      <main>
-        <section class="view active" data-view="relogio">
-          <p class="status-line" id="status">Conecte o relógio para começar.</p>
+      <main id="mainContent">
+        <section class="view active" data-view="hoje" id="fitnessView"></section>
+        <section class="view" data-view="relogio">
+          <p class="status-line" id="status" role="status">Conecte o relógio para começar.</p>
           <div class="monitor" id="dial">
             <div class="readout">
               <span class="vital-label">Bateria</span>
@@ -93,6 +97,7 @@ export function mountApp({ root, ble, store, platform, commands, responses, extr
             <div class="actions" style="margin-top:12px"><button class="btn watch" id="readAll" disabled>Ler tudo</button></div>
           </div>
           <div class="block" id="profileBlock"></div>
+          <section class="block"><h2>Do seu jeito</h2><div class="appearance"><label for="fitTheme">Tema<select id="fitTheme"><option value="neon">Neon — Cyberpunk</option><option value="system">Acompanhar sistema</option><option value="light">Claro</option><option value="dark">Escuro</option></select></label><label class="check"><input type="checkbox" id="fitMotion"> Reduzir animações</label></div></section>
           <div class="block">
             <h2>Recursos declarados</h2>
             <div class="chips" id="features"><span class="chip static">aparecem depois de ler os recursos</span></div>
@@ -156,6 +161,9 @@ export function mountApp({ root, ble, store, platform, commands, responses, extr
 
   const recorder = new Recorder(store, (e) => renderEntry(e));
   const session = new Session({ ble, recorder, responses });
+  mountFitness($('#fitnessView'), { session, navigate: (id) => root.querySelector(`.tabs [data-view="${id}"]`).click() });
+  mountAppearance(root);
+  import('./neon-3d.js').then(({ mountNeon3D }) => mountNeon3D(root)).catch(() => { root.dataset.webgl = 'unavailable'; });
   const measure = createMeasure({ root: $('#measureView'), session, commands, recorder });
   mountProfile($('#profileBlock'), { session, commands, recorder });
 
@@ -217,14 +225,33 @@ export function mountApp({ root, ble, store, platform, commands, responses, extr
   logPanel.querySelector('#share')?.addEventListener('click', () => recorder.share().catch((e) => setStatus(`Não foi possível exportar: ${e.message}`, 'err')));
   logPanel.querySelector('#openFolder')?.addEventListener('click', () => platform.openFolder?.());
 
-  // ---------- navegação ----------
-  root.querySelector('.tabs').addEventListener('click', (ev) => {
-    const b = ev.target.closest('[data-view]');
-    if (!b) return;
-    root.querySelectorAll('.tabs [data-view]').forEach((t) => t.setAttribute('aria-selected', String(t === b)));
-    root.querySelectorAll('main > .view').forEach((v) => v.classList.toggle('active', v.dataset.view === b.dataset.view));
+  // ---------- navegação acessível ----------
+  const tabButtons = [...root.querySelectorAll('.tabs [role="tab"]')];
+  root.querySelectorAll('main > .view').forEach((panel) => {
+    panel.id = panel.id || `panel-${panel.dataset.view}`;
+    panel.setAttribute('role', 'tabpanel');
+    panel.setAttribute('aria-labelledby', `tab-${panel.dataset.view}`);
+    panel.tabIndex = 0;
+    root.querySelector(`#tab-${panel.dataset.view}`).setAttribute('aria-controls', panel.id);
+  });
+  root.querySelector('.tabs').addEventListener('click', (event) => {
+    const button = event.target.closest('[role="tab"]');
+    if (!button) return;
+    root.querySelector('.shell').dataset.current = button.dataset.view;
+    tabButtons.forEach(tab => { tab.setAttribute('aria-selected', String(tab === button)); tab.tabIndex = tab === button ? 0 : -1; });
+    root.querySelectorAll('main > .view').forEach(panel => panel.classList.toggle('active', panel.dataset.view === button.dataset.view));
     root.querySelector('main').scrollTop = 0;
     window.scrollTo(0, 0);
+  });
+  root.querySelector('.tabs').addEventListener('keydown', (event) => {
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+    const tabs = tabButtons.filter(tab => tab.getClientRects().length);
+    const current = tabs.indexOf(event.target.closest('[role="tab"]'));
+    if (current < 0) return;
+    event.preventDefault();
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
+      : (current + (['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : 1) + tabs.length) % tabs.length;
+    tabs[next].click(); tabs[next].focus();
   });
 
   // ---------- estado e mostrador ----------

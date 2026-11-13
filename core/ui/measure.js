@@ -76,7 +76,7 @@ export function createMeasure({ root, session, recorder, commands = [] }) {
 
   root.innerHTML = `
     <div class="block">
-      <h2>Medições</h2>
+      <div class="health-heading"><span class="edition"><i></i> Biosinais</span><h2>Seu corpo em foco.</h2></div>
       <p>Toque em um canal para medir. Medições feitas no menu do relógio também aparecem aqui; use "Buscar no relógio" para trazer as que ficaram guardadas nele.</p>
       <div class="channels" id="mChannels"></div>
       <div class="actions"><button class="btn quiet" id="mSync" disabled>Buscar no relógio</button></div>
@@ -96,7 +96,7 @@ export function createMeasure({ root, session, recorder, commands = [] }) {
       <dl class="facts" id="mToday"><dt>—</dt><dd>Toque em "Atualizar" para pedir os dados ao relógio.</dd></dl>
       <svg id="mHours" viewBox="0 0 288 80" width="100%" height="80" role="img" aria-label="Passos por hora" style="display:block;margin:10px 0"></svg>
       <div class="actions"><button class="btn" id="mToday1" disabled>Atualizar</button></div>
-      <p class="file">Passos, distância em metros e calorias em cal (04/00); passos por hora (04/01).</p>
+      <p class="file">Atividade registrada pelo relógio. A energia é apresentada em quilocalorias (kcal).</p>
     </div>`;
 
   // janela de medição: fora do root para ficar por cima de tudo
@@ -119,10 +119,10 @@ export function createMeasure({ root, session, recorder, commands = [] }) {
       const c = l ? classify(m.id, l.r) : null;
       const busy = (st.measuring?.id === m.id) || (st.external?.id === m.id);
       return `<button class="channel" data-ch="${m.id}" data-state="${busy ? 'measuring' : 'idle'}" ${st.connected ? '' : 'disabled'}>
-        <span class="art">${ART[m.id]}</span>
+        <span class="art metric-object" data-model="${m.id}" aria-hidden="true"><span class="model-fallback">${ART[m.id]}</span></span>
         <span class="ch-name">${esc(m.label)}</span>
         <span class="ch-value">${l ? esc(l.r.text) : '—'}<small>${esc(m.unit)}</small></span>
-        <span class="ch-meta">${busy ? 'medindo…' : l ? `${esc(l.r.time)}${c?.label ? ` · <b data-tone="${c.tone}">${esc(c.label)}</b>` : ''}` : m.declared || m.id === 'bp' || m.id === 'stress' ? 'toque para medir' : 'sensor não declarado'}</span>
+        <span class="ch-meta">${busy ? 'medindo…' : l ? `${esc(l.r.time)}${c?.label ? ` · <b data-tone="${c.tone}">${esc(c.label)}</b>` : ''}` : m.declared || m.id === 'bp' || m.id === 'stress' ? (st.connected ? 'toque para medir' : 'conecte para medir') : 'sensor não declarado'}</span>
       </button>`;
     }).join('');
   }

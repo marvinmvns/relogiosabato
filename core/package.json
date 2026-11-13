@@ -2,5 +2,10 @@
   "name": "relogio-sabatinho-core",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test test/*.test.js" }
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "three": "^0.180.0"
+  }
 }

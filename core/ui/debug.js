@@ -73,9 +73,9 @@ export function mountDebug(section, { session, responses = [], platform }) {
     <div class="block">
       <h2>Abrir um registro</h2>
       <p>Escolha um arquivo <code>sessao-*.jsonl</code> salvo pelo app (Android, desktop ou web) para rever os quadros.</p>
-      <input type="file" id="dbgFile" accept=".jsonl,.json,.txt">
+      <label for="dbgFile">Abrir registro de uma sessão</label><input type="file" id="dbgFile" accept=".jsonl,.json,.txt">
       <p class="file" id="dbgFileInfo"></p>
-      <input class="search" id="dbgFileSearch" type="search" placeholder="Filtrar por cmd/key, hex ou texto" hidden>
+      <input class="search" id="dbgFileSearch" aria-label="Filtrar arquivo de registro" type="search" placeholder="Filtrar por cmd/key, hex ou texto" hidden>
       <ul class="results" id="dbgFileList"></ul>
     </div>`;
 
