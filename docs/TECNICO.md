@@ -354,3 +354,18 @@ Fonte: `MBleManager`, `BaseReconnectBlueActivity` e `MainActivity` do Podsfine 1
 O app oficial não tem keepalive: depois dos primeiros comandos, o relógio aceita a conexão parada. O tráfego periódico dele (`01/01`, dados do dia) existe para sincronizar passos, não para manter o link.
 
 Validação no relógio real (12/11, 22:29): conexão na primeira tentativa, estável sem tráfego por 60 s, e suíte completa sem queda: 210 itens, 94 passaram, 86 pulados (configuração e payloads ainda não codificados), 30 bloqueados (OTA, fábrica e vínculo), 0 sem resposta.
+
+## Medições no pulso (12/11, 22:45)
+
+Cada medição começa com `DF 06/xx` com payload `01`. O resultado chega como um registro do histórico, não como valor ao vivo (`03/2A`):
+
+| Medição | Comando | Estado | Resultado | No relógio real |
+|---|---|---|---|---|
+| Frequência cardíaca | 06/04 | 03/0F | 03/00, bpm no último byte do registro de 8 bytes | 87 bpm em ~10 s |
+| Pressão arterial | 06/05 | 03/15 | 03/01, sistólica e diastólica nos dois últimos bytes | 128/70 mmHg em ~20 s |
+| Estresse | 06/12 | 03/29 | 03/07, registros de 3 bytes: minuto do dia (u16) e valor | 32 |
+| Oxigênio no sangue | 06/06 | nenhum | nenhum (só FD) | sem sensor |
+| Temperatura | 06/15 | nenhum | nenhum (só FD) | sem sensor |
+| HRV | 06/16 | nenhum | nenhum (só FD) | sem sensor |
+
+Os formatos de 03/02 (SpO₂), 03/03 (temperatura) e 03/32 (HRV) seguem o `BleDataUtils.handleHealthData` e já estão decodificados para outros modelos.

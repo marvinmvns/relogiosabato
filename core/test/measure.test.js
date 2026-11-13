@@ -65,3 +65,24 @@ test('estatísticas', () => {
   assert.deepEqual(stats([70, 72, 74]), { n: 3, min: 70, max: 74, avg: 72, last: 74 });
   assert.equal(stats([]), null);
 });
+
+import { decodeBpHistory, decodeStressHistory, decodeSpo2History, decodeTempHistory, decodeHrvHistory } from '../measure.js';
+const hx = (s) => Uint8Array.from(s.split(' ').map((b) => parseInt(b, 16)));
+
+test('03/01 pressão real do TF37 Pro: 120/75 às 22:39', () => {
+  const h = decodeBpHistory(hx('35 6c 00 01 00 01 3e b9 00 00 78 4b'));
+  assert.equal(h.date, '2026-11-12');
+  assert.deepEqual([h.records[0].time, h.records[0].sys, h.records[0].dia, h.records[0].text], ['22:39', 120, 75, '120/75']);
+});
+
+test('03/07 estresse real do TF37 Pro: 84 às 22:40 (registro de 3 bytes)', () => {
+  const h = decodeStressHistory(hx('35 6c 00 01 05 50 54'));
+  assert.deepEqual([h.records[0].time, h.records[0].value], ['22:40', 84]);
+});
+
+test('03/02, 03/03 e 03/32 seguem o registro de 8 bytes do app oficial', () => {
+  assert.equal(decodeSpo2History(hx('35 6c 00 01 00 01 3e b9 00 00 00 62')).records[0].value, 98);
+  assert.equal(decodeTempHistory(hx('35 6c 00 01 00 01 3e b9 00 00 24 05')).records[0].text, '36,5');
+  assert.equal(decodeHrvHistory(hx('35 6c 00 01 00 01 3e b9 00 00 00 2a')).records[0].value, 42);
+  assert.equal(decodeBpHistory(hx('35 6c 00 01 00 01 3e b9 00 00 10 05')).records.length, 0, 'valores fora da faixa são descartados');
+});

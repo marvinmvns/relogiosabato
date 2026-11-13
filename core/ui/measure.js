@@ -3,6 +3,7 @@
 // Cada medição interpretada também vai para o registro (type: 'medicao').
 import {
   decodeToday, decodeHourly, decodeHrHistory, decodeLive, decodeStatus, stats, MEASUREMENTS, measureCommand,
+  RESULT_KEYS, RESULT_DECODERS,
 } from '../measure.js';
 
 const AUTO_STOP_S = 60;
@@ -54,8 +55,9 @@ export function createMeasure({ root, session, recorder }) {
 
     <div class="block">
       <h2>Outras medições</h2>
-      <p>O relógio não declara estes sensores nos recursos. Dá para pedir e ver se ele responde.</p>
+      <p>O relógio não declara estes sensores nos recursos, mas responde a alguns. O resultado aparece no mostrador acima e na lista abaixo.</p>
       <div class="actions" id="mOthers"></div>
+      <ul class="results" id="mOtherHist"></ul>
     </div>`;
 
   const $ = (s) => root.querySelector(s);
@@ -64,19 +66,19 @@ export function createMeasure({ root, session, recorder }) {
   for (const m of MEASUREMENTS.filter((x) => !x.declared)) {
     const b = document.createElement('button');
     b.className = 'btn quiet';
-    b.textContent = `${m.label}: medir 30 s`;
+    b.textContent = `Medir ${m.label.toLowerCase()}`;
     b.disabled = true;
     b.dataset.needsConn = '1';
-    b.onclick = () => start(m, 30);
+    b.onclick = () => start(m, m.id === 'stress' ? 60 : 40);
     $('#mOthers').appendChild(b);
   }
 
-  // O TF37 Pro não manda 03/2A: mede ~10 s e entrega o resultado como um registro
-  // do histórico (03/00), às vezes seguido de um segundo registro ~3 s depois.
-  // Registros com horário dentro da medição (ou até 15 s depois dela) contam como leitura.
-  function takeHistoryReading(h) {
-    const m = st.measuring || (st.last?.id === 'hr' && Date.now() - st.stoppedAt < 15000 ? st.last : null);
-    if (!m || m.id !== 'hr' || !h.records.length) return null;
+  // O TF37 Pro não manda 03/2A: mede uns 10 a 30 s e entrega o resultado como um registro
+  // do histórico (03/00 FC, 03/01 pressão, 03/07 estresse...), às vezes repetido ~3 s depois.
+  // Registros que chegam durante a medição (ou até 15 s depois dela) contam como leitura.
+  function takeResult(id, h) {
+    const m = st.measuring || (Date.now() - st.stoppedAt < 15000 ? st.last : null);
+    if (!m || m.id !== id || !h.records.length) return null;
     const r = h.records[h.records.length - 1];
     const now = new Date();
     const nowS = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
@@ -84,10 +86,11 @@ export function createMeasure({ root, session, recorder }) {
     // Folga de 10 min para o relógio fora de hora; um registro mais velho é do histórico, não desta medição.
     if (Math.abs(r.seconds - nowS) > sinceStart + 600) return null;
     if (st.series.some((x) => x.seconds === r.seconds)) return null;
-    st.series.push({ t: Date.now() - st.startedAt, value: r.bpm, seconds: r.seconds });
-    $('#mBpm').textContent = String(r.bpm);
+    st.series.push({ t: Date.now() - st.startedAt, value: r.value ?? r.bpm, seconds: r.seconds });
+    $('#mBpm').textContent = r.text ?? String(r.bpm);
     $('#mBpm').dataset.v = '1';
     if (!st.measuring) $('#mState').textContent = 'concluído (o relógio terminou)';
+    else stop('o relógio entregou o resultado');
     drawSpark();
     showStats();
     return r;
@@ -125,6 +128,7 @@ export function createMeasure({ root, session, recorder }) {
     st.last = m;
     $('#mBpm').textContent = '…';
     $('#mBpmUnit').textContent = m.unit;
+    $('#mBpm').closest('.block').querySelector('h2').textContent = m.label;
     $('#mState').textContent = `pedindo ${m.label.toLowerCase()}`;
     drawSpark();
     showStats();
@@ -180,11 +184,19 @@ export function createMeasure({ root, session, recorder }) {
         await recorder.add({ type: 'medicao', note: `${status.what}: ${status.text}`, estado: status });
         if (status.failed && st.measuring) stop('o relógio não conseguiu medir; coloque no pulso e tente de novo');
         else if (status.status === 0 && st.measuring && st.series.length) stop('o relógio terminou');
+      } else if (RESULT_DECODERS[f.key]) {
+        const h = RESULT_DECODERS[f.key](p);
+        if (!h) return;
+        const id = RESULT_KEYS[f.key];
+        const m = MEASUREMENTS.find((x) => x.id === id);
+        renderOther(m, h);
+        const r = takeResult(id, h);
+        await recorder.add({ type: 'medicao', note: `${m.label}: ${h.records.map((x) => `${x.time} ${x.text} ${m.unit}`).join(', ') || 'sem registros válidos'}${r ? ' (resultado da medição)' : ''}`, historico: h, medida: id });
       } else if (f.key === 0x00) {
         const h = decodeHrHistory(p);
         if (!h) return;
         renderHistory(h);
-        const r = takeHistoryReading(h);
+        const r = takeResult('hr', { ...h, records: h.records.map((x) => ({ ...x, value: x.bpm, text: String(x.bpm) })) });
         if (r) await recorder.add({ type: 'medicao', note: `frequência cardíaca: ${r.bpm} bpm (resultado em 03/00)`, valor: { bpm: r.bpm, hora: r.time } });
         await recorder.add({ type: 'medicao', note: `histórico de FC ${h.date}: ${h.records.length} registros`, historico: h });
       }
@@ -208,6 +220,13 @@ export function createMeasure({ root, session, recorder }) {
       await recorder.add({ type: 'medicao', note: `passos por hora ${hrs.date}`, porHora: hrs });
     }
   });
+
+  const others = new Map();
+  function renderOther(m, h) {
+    for (const r of h.records) others.set(`${m.id}|${h.date}|${r.seconds}`, { m, date: h.date, r });
+    $('#mOtherHist').innerHTML = [...others.values()].sort((a, b) => (b.date + b.r.time).localeCompare(a.date + a.r.time)).slice(0, 30).map(({ m: mm, date, r }) => `
+      <li data-status="passou"><span class="mark">●</span><span>${esc(mm.label)} · ${esc(date)} ${esc(r.time)}</span><span class="ms">${esc(r.text)} ${esc(mm.unit)}</span></li>`).join('');
+  }
 
   function renderHistory(h) {
     const list = $('#mHist');

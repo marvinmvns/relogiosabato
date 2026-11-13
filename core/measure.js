@@ -60,6 +60,50 @@ export function decodeHrHistory(p) {
   return { date: date.iso, count, records };
 }
 
+const hhmmOf = (sec) => `${String(Math.floor(sec / 3600)).padStart(2, '0')}:${String(Math.floor((sec % 3600) / 60)).padStart(2, '0')}`;
+
+/** Registros de 8 bytes (segundos u32, modo, auto, a, b), como 03/01, 03/02, 03/03 e 03/32. */
+function records8(p, pick) {
+  if (p.length < 4) return null;
+  const date = decodeDate2(p[0], p[1]);
+  const count = u16(p, 2);
+  const records = [];
+  for (let i = 0; i < count && 4 + i * 8 + 8 <= p.length; i++) {
+    const b = 4 + i * 8;
+    const seconds = u32(p, b);
+    const r = pick(p[b + 6], p[b + 7]);
+    if (r) records.push({ time: hhmmOf(seconds), seconds, mode: p[b + 4], auto: p[b + 5] === 1, ...r });
+  }
+  return { date: date.iso, count, records };
+}
+
+/** 03/01 — pressão arterial (BleDataUtils b == 1): sistólica e diastólica nos dois últimos bytes. */
+export const decodeBpHistory = (p) => records8(p, (hi, lo) => (hi >= 50 && lo >= 30 && lo <= 200 ? { sys: hi, dia: lo, value: hi, text: `${hi}/${lo}` } : null));
+/** 03/02 — oxigênio no sangue (b == 2): % no último byte. */
+export const decodeSpo2History = (p) => records8(p, (_a, v) => (v > 0 && v <= 100 ? { value: v, text: `${v}` } : null));
+/** 03/03 — temperatura (b == 3): inteiro e décimo nos dois últimos bytes. */
+export const decodeTempHistory = (p) => records8(p, (i, d) => (i || d ? { value: Number(`${i}.${d}`), text: `${i},${d}` } : null));
+/** 03/32 — HRV (b == 50): ms no último byte. */
+export const decodeHrvHistory = (p) => records8(p, (_a, v) => (v ? { value: v, text: `${v}` } : null));
+
+/** 03/07 — estresse (o último ramo de handleHealthData): registros de 3 bytes, minuto do dia (u16) e valor. */
+export function decodeStressHistory(p) {
+  if (p.length < 4) return null;
+  const date = decodeDate2(p[0], p[1]);
+  const count = u16(p, 2);
+  const records = [];
+  for (let i = 0; i < count && 4 + i * 3 + 3 <= p.length; i++) {
+    const b = 4 + i * 3;
+    const seconds = u16(p, b) * 60;
+    records.push({ time: hhmmOf(seconds), seconds, value: p[b + 2], text: `${p[b + 2]}` });
+  }
+  return { date: date.iso, count, records };
+}
+
+/** Qual quadro traz o resultado de cada medição neste relógio. */
+export const RESULT_KEYS = { 0x00: 'hr', 0x01: 'bp', 0x02: 'spo2', 0x03: 'temp', 0x07: 'stress', 0x32: 'hrv' };
+export const RESULT_DECODERS = { 0x01: decodeBpHistory, 0x02: decodeSpo2History, 0x03: decodeTempHistory, 0x07: decodeStressHistory, 0x32: decodeHrvHistory };
+
 /** 03/2A — valor ao vivo durante a medição: [tipo, valor]. Tipo 1 = bpm, 2 = SpO2 %. */
 export function decodeLive(p) {
   if (p.length < 2) return null;
@@ -90,6 +134,8 @@ export const MEASUREMENTS = [
   { id: 'spo2', label: 'Oxigênio no sangue', cmd: 0x06, key: 0x06, liveType: 2, unit: '%', declared: false },
   { id: 'bp', label: 'Pressão arterial', cmd: 0x06, key: 0x05, liveType: null, unit: 'mmHg', declared: false },
   { id: 'stress', label: 'Estresse', cmd: 0x06, key: 0x12, liveType: null, unit: '', declared: false },
+  { id: 'temp', label: 'Temperatura', cmd: 0x06, key: 0x15, liveType: null, unit: '°C', declared: false },
+  { id: 'hrv', label: 'HRV', cmd: 0x06, key: 0x16, liveType: null, unit: 'ms', declared: false },
 ];
 
 export function measureCommand(m, on) {
