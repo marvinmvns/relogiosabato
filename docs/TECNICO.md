@@ -369,3 +369,21 @@ Cada medição começa com `DF 06/xx` com payload `01`. O resultado chega como u
 | HRV | 06/16 | nenhum | nenhum (só FD) | sem sensor |
 
 Os formatos de 03/02 (SpO₂), 03/03 (temperatura) e 03/32 (HRV) seguem o `BleDataUtils.handleHealthData` e já estão decodificados para outros modelos.
+
+## Todos os comandos do Podsfine (12/11, 23:30)
+
+Os 36 que faltavam foram implementados um a um em `core/extra-commands.js`, fiéis ao `CommandUtils.java`: clima (05/00, 05/01, 05/02), perfil (02/04), nome (02/20), metas de calorias e distância (02/2C, 02/2D), SOS (02/14), remédios (02/32), ciclo (19/01), lembrete de evento (13/02), mostrador (0B/03), logo (17/02), GPS (18/06), textos de IA, tradução e ChatGPT (31, 37, 30, 3B, 1E), crachá (3A/01) e fone (25, 26, 27). Agora todos os 179 comandos não perigosos têm codificador.
+
+Bits de recursos do relógio (00/00), lidos com a mesma lógica do app oficial: lembrete de remédio, estresse, tradução por IA, alarmes numerados, água, lavar as mãos, olhar longe, exercício, leitura, viagem, pressão automática, sono automático, limites de FC e levantar para acender. Não declara clima, SOS, ciclo, GPS nem os sensores de SpO₂, temperatura e HRV.
+
+Os que gravam dado pessoal sem leitura de volta (perfil, nome, metas, SOS, remédios, ciclo, evento, mostrador, logo e os que criam alarme ou tarefa por IA) ficam fora da suíte automática (`personal: true`) e foram enviados à mão, com valores inofensivos (remédio e lembretes desligados, SOS vazio): todos com ACK status 0, e a lista de alarmes continuou vazia (`06/08` = `a0 00`).
+
+| Execução | Itens | Passou | Pulado | Bloqueado | Falha |
+|---|---|---|---|---|---|
+| Android, suíte com configurações | 231 | 188 | 13 (pessoais, enviados à mão) | 30 | 0 |
+| Android, 13 pessoais à mão | 13 | 13 | 0 | 0 | 0 |
+| Desktop (Electron, Linux), suíte padrão | 210 | 94 | 86 (configuração) | 30 | 0 |
+
+Desktop: conectou pelo Bluetooth do PC (BlueZ) com o relógio liberado pelo celular, mediu FC 71 bpm e pressão 111/69. No Linux, o Electron baixado pelo npm só abre com `chrome-sandbox` do root em modo 4755 (`sudo chown root:root node_modules/electron/dist/chrome-sandbox && sudo chmod 4755 node_modules/electron/dist/chrome-sandbox`) ou com `--no-sandbox` em teste local.
+
+Valores deixados no relógio pelos testes pessoais, para ajustar na aba Comandos: perfil masculino, 30 anos, 170 cm, 70 kg; nome "Sabatinho"; metas de 300 kcal e 5 km; mostrador `00`.

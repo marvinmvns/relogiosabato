@@ -276,6 +276,8 @@ export function mountApp({ root, ble, store, platform, commands, responses, extr
     }
   }
 
+  // Acesso pelo DevTools (depuração e testes manuais): window.relogio.session.send(...)
+  window.relogio = { session, commands };
   session.addEventListener('status', (e) => setStatus(e.detail.text));
   session.addEventListener('info', () => { updateDial(); renderFacts(); });
   session.addEventListener('connection', (e) => {

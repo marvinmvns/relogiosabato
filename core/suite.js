@@ -29,6 +29,8 @@ export function buildPlan(commands, { includeConfig = false, writeBack = true } 
   return sorted.map((command) => {
     if (command.risk === 'perigoso') return { command, skip: 'bloqueado' };
     if (!command.encode) return { command, skip: 'pulado', note: 'payload complexo ainda não implementado' };
+    // Perfil, remédios, SOS...: o relógio não deixa ler de volta, então a suíte não sobrescreve.
+    if (command.personal) return { command, skip: 'pulado', note: 'dado pessoal sem leitura de volta: envie pela aba Comandos' };
     // Alarmes e lembretes: sempre o valor lido, para nunca apagar o que a pessoa configurou.
     if (wb.has(command.id) && (!includeConfig || RAW_IDS.has(command.id))) return { command, writeBack: true };
     if (command.risk === 'altera-config' && !includeConfig) return { command, skip: 'pulado' };

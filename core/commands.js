@@ -5,6 +5,7 @@
 import { CATALOG } from './catalog.generated.js';
 import { encodeTime } from './protocol.js';
 import { parseHrLimits } from './settings.js';
+import { EXTRA } from './extra-commands.js';
 import {
   decodeToday, decodeHourly, decodeHrHistory, decodeLive, decodeStatus, decodeDate2,
 } from './measure.js';
@@ -357,14 +358,17 @@ function encoderFor(e) {
 
 const seen = new Map();
 export const COMMANDS = CATALOG.map((e) => {
-  const custom = CUSTOM[e.method];
   const n = (seen.get(e.method) || 0) + 1;
   seen.set(e.method, n);
+  const id = n > 1 ? `${e.method}_${n}` : e.method;
+  // Variantes repetidas herdam o codificador feito à mão do método, como antes; o EXTRA é por id.
+  const custom = CUSTOM[id] ?? EXTRA[id] ?? CUSTOM[e.method];
   const encode = custom?.encode ?? encoderFor(e);
   const group = groupOf(e);
   const risk = riskOf(e);
   return {
-    id: n > 1 ? `${e.method}_${n}` : e.method,
+    id,
+    personal: Boolean(custom?.personal),
     method: e.method,
     cmd: e.cmd,
     key: e.key,

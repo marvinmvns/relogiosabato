@@ -17,7 +17,8 @@ medem e registram tudo, e a documentação técnica completa.
 | App oficial | Podsfine `com.lianhezhuli.podsFine` 1.2.3 | Play Store |
 | GATT | `18AC` comandos (`2AAD` escrita, `2AAC` notificação), `1106` arquivos (variante 5610), `180F` bateria | relógio real |
 | Quadros | DF/FD, checksum no byte 3, versão `0x04`, ACK de 10 bytes | 374 quadros em captura + sessões do app |
-| Comandos | 209 extraídos; 155 codificados; 139 confirmados no relógio real (63 de configuração, regravando ou restaurando o valor lido); 30 perigosos bloqueados | [COMANDOS.md](docs/COMANDOS.md) |
+| Comandos | 209 extraídos; 191 codificados; os 179 não perigosos confirmados no relógio real (166 pela suíte, regravando ou restaurando o valor lido, e 13 de dados pessoais à mão); 30 perigosos bloqueados | [COMANDOS.md](docs/COMANDOS.md) |
+| Medições | FC, pressão arterial e estresse no pulso (Android e desktop); SpO₂, temperatura e HRV não existem neste modelo | [TECNICO.md](docs/TECNICO.md) |
 
 ## Estrutura
 
