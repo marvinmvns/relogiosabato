@@ -86,3 +86,13 @@ test('03/02, 03/03 e 03/32 seguem o registro de 8 bytes do app oficial', () => {
   assert.equal(decodeHrvHistory(hx('35 6c 00 01 00 01 3e b9 00 00 00 2a')).records[0].value, 42);
   assert.equal(decodeBpHistory(hx('35 6c 00 01 00 01 3e b9 00 00 10 05')).records.length, 0, 'valores fora da faixa são descartados');
 });
+
+import { classify, halfHourSlot } from '../measure.js';
+test('classificação: estresse com as faixas do app oficial e referências das demais', () => {
+  assert.deepEqual([29, 30, 60, 80].map((v) => classify('stress', { value: v }).label), ['relaxado', 'normal', 'médio', 'alto']);
+  assert.equal(classify('bp', { sys: 128, dia: 70, value: 128 }).label, 'elevada');
+  assert.equal(classify('bp', { sys: 111, dia: 69, value: 111 }).label, 'normal');
+  assert.equal(classify('hr', { bpm: 87 }).tone, 'ok');
+  assert.equal(classify('spo2', { value: 93 }).label, 'baixa');
+  assert.equal(halfHourSlot(81593), 45); // 22:39
+});

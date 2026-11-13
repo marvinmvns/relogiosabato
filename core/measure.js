@@ -156,3 +156,47 @@ export function stats(values) {
   const avg = values.reduce((a, b) => a + b, 0) / values.length;
   return { n: values.length, min, max, avg: Math.round(avg * 10) / 10, last: values[values.length - 1] };
 }
+
+/**
+ * Classificação de um resultado. Estresse: faixas do app oficial (AppWatchUtil.getProLevel).
+ * O app oficial não classifica as demais; aqui vão referências gerais de adulto em repouso,
+ * marcadas como referência (não diagnóstico). tone: 'ok' | 'atencao' | 'alto' | 'neutro'.
+ */
+export function classify(id, r) {
+  const v = Number(r?.value ?? r?.bpm);
+  if (!Number.isFinite(v)) return null;
+  if (id === 'stress') {
+    if (v >= 80) return { label: 'alto', tone: 'alto' };
+    if (v >= 60) return { label: 'médio', tone: 'atencao' };
+    if (v >= 30) return { label: 'normal', tone: 'ok' };
+    return { label: 'relaxado', tone: 'ok' };
+  }
+  if (id === 'hr') {
+    if (v < 50) return { label: 'baixa', tone: 'atencao' };
+    if (v <= 100) return { label: 'dentro da faixa de repouso', tone: 'ok' };
+    return { label: 'acima da faixa de repouso', tone: 'atencao' };
+  }
+  if (id === 'bp') {
+    const sys = r.sys ?? v; const dia = r.dia ?? 0;
+    if (sys >= 180 || dia >= 120) return { label: 'muito alta', tone: 'alto' };
+    if (sys >= 130 || dia >= 80) return { label: 'alta', tone: 'atencao' };
+    if (sys >= 120) return { label: 'elevada', tone: 'atencao' };
+    if (sys < 90 || dia < 60) return { label: 'baixa', tone: 'atencao' };
+    return { label: 'normal', tone: 'ok' };
+  }
+  if (id === 'spo2') {
+    if (v >= 95) return { label: 'normal', tone: 'ok' };
+    if (v >= 90) return { label: 'baixa', tone: 'atencao' };
+    return { label: 'muito baixa', tone: 'alto' };
+  }
+  if (id === 'temp') {
+    if (v >= 37.8) return { label: 'febre', tone: 'alto' };
+    if (v >= 37.3) return { label: 'levemente alta', tone: 'atencao' };
+    if (v >= 35.5) return { label: 'normal', tone: 'ok' };
+    return { label: 'baixa', tone: 'atencao' };
+  }
+  return { label: '', tone: 'neutro' };
+}
+
+/** Meia hora do dia (0 a 47) de um registro, como no gráfico diário do app oficial. */
+export const halfHourSlot = (seconds) => Math.min(47, Math.max(0, Math.floor(seconds / 1800)));

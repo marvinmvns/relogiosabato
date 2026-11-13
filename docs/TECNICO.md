@@ -387,3 +387,17 @@ Os que gravam dado pessoal sem leitura de volta (perfil, nome, metas, SOS, remé
 Desktop: conectou pelo Bluetooth do PC (BlueZ) com o relógio liberado pelo celular, mediu FC 71 bpm e pressão 111/69. No Linux, o Electron baixado pelo npm só abre com `chrome-sandbox` do root em modo 4755 (`sudo chown root:root node_modules/electron/dist/chrome-sandbox && sudo chmod 4755 node_modules/electron/dist/chrome-sandbox`) ou com `--no-sandbox` em teste local.
 
 Valores deixados no relógio pelos testes pessoais, para ajustar na aba Comandos: perfil masculino, 30 anos, 170 cm, 70 kg; nome "Sabatinho"; metas de 300 kcal e 5 km; mostrador `00`.
+
+## Aba Medir: monitor multiparamétrico (13/11)
+
+Seguindo o fluxo do app oficial (`view/MeasurementBtnView`): tocar num canal abre a janela de medição; "medindo" com contador até o relógio mandar o estado 0 ou 2; o resultado aparece com a classificação; "medir de novo"; fechar a janela no meio para a medição (06/xx com 0). O app oficial não tem prazo; aqui há uma rede de segurança (FC 60 s, pressão e estresse 90 s) e, se nenhum estado chega em 8 s, o canal avisa que o modelo não tem aquele sensor.
+
+- Classificação do estresse: faixas do app oficial (`AppWatchUtil.getProLevel`): 1–29 relaxado, 30–59 normal, 60–79 médio, 80–100 alto. O app oficial não classifica FC, pressão, oxigênio nem temperatura; o app mostra referências gerais de adulto em repouso, marcadas como referência.
+- Gráfico do dia em 48 meias horas (como os fragmentos `*DayFragment` do app oficial), com mínimo, média, máximo e lista; pressão em barra sistólica–diastólica.
+- Medições começadas no menu do relógio: o estado chega sem o app ter pedido e a janela abre sozinha. Depois do "parar", o relógio ainda manda um último "medindo" (visto no estresse); ele é ignorado por 10 s.
+- "Buscar no relógio" envia a sincronização (01/01): o relógio responde 01/02 (início), 03/00, 03/01, 03/07, 04/xx e 01/03 (fim).
+- O histórico fica no aparelho (últimos 30 dias) e sobrevive a reinícios do app.
+
+Medido no celular (Android) pela interface nova: FC 88 bpm, pressão 105/75 (normal), estresse 63 (médio); oxigênio, temperatura e HRV avisam que o sensor não existe. Suíte com configurações depois das mudanças: 231 itens, 188 passaram, 13 pulados (pessoais), 30 bloqueados, 0 falhas.
+
+Desktop no Linux: o BlueZ às vezes leva mais de 11 s para resolver os serviços do relógio, e o relógio derruba a conexão por falta de comando nesse prazo (visto em 13/11 depois de várias reconexões seguidas). A conexão agora repete a preparação inteira até 3 vezes; se ainda assim falhar, desligar e ligar o Bluetooth do PC costuma resolver.

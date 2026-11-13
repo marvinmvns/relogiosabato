@@ -84,11 +84,19 @@ export class Session extends EventTarget {
       });
       this.lastDevice = device;
       this.autoReconnect = this.timing.autoReconnect;
-      try {
-        await this.#open(device, 4);
-      } catch (e) {
-        if (this.device) { try { await this.ble.disconnect(device.id); } catch (_e) { /* já caiu */ } this.device = null; }
-        throw e;
+      // O link às vezes cai logo depois de conectar, antes dos serviços (visto no BlueZ do
+      // Linux e no Android): repete a sequência inteira, não só o connect.
+      for (let round = 1; ; round++) {
+        try {
+          await this.#open(device, 4);
+          break;
+        } catch (e) {
+          if (this.device) { try { await this.ble.disconnect(device.id); } catch (_e) { /* já caiu */ } this.device = null; }
+          if (round >= 3 || /cancel/i.test(e.message)) throw e;
+          await this.recorder.add({ type: 'erro', note: `conexão caiu durante a preparação (${e.message}); repetindo, rodada ${round + 1} de 3` });
+          this.#emit('status', { text: `A conexão caiu durante a preparação. Tentando de novo (${round + 1} de 3).` });
+          await sleep(1500);
+        }
       }
     } finally {
       this.connecting = false;
