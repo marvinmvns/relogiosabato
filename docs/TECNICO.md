@@ -353,4 +353,4 @@ Fonte: `MBleManager`, `BaseReconnectBlueActivity` e `MainActivity` do Podsfine 1
 
 O app oficial não tem keepalive: depois dos primeiros comandos, o relógio aceita a conexão parada. O tráfego periódico dele (`01/01`, dados do dia) existe para sincronizar passos, não para manter o link.
 
-Validação no relógio real (13/11, 22:29): conexão na primeira tentativa, estável sem tráfego por 60 s, e suíte completa sem queda: 210 itens, 94 passaram, 86 pulados (configuração e payloads ainda não codificados), 30 bloqueados (OTA, fábrica e vínculo), 0 sem resposta.
+Validação no relógio real (12/11, 22:29): conexão na primeira tentativa, estável sem tráfego por 60 s, e suíte completa sem queda: 210 itens, 94 passaram, 86 pulados (configuração e payloads ainda não codificados), 30 bloqueados (OTA, fábrica e vínculo), 0 sem resposta.
