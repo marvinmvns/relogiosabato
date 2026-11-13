@@ -48,7 +48,20 @@ export class Session extends EventTarget {
     this.#emit('info', { key, value });
   }
 
-  async connect({ any = false } = {}) {
+  async connect(opts = {}) {
+    // Dois toques em "Conectar" abriam duas conexões em paralelo, que brigavam pelo
+    // mesmo relógio (GATT 133). Uma de cada vez.
+    if (this.connecting) throw new Error('já está conectando; aguarde');
+    if (this.device) return;
+    this.connecting = true;
+    try {
+      await this.#connect(opts);
+    } finally {
+      this.connecting = false;
+    }
+  }
+
+  async #connect({ any = false } = {}) {
     await this.ble.initialize();
     this.#emit('status', { text: 'Escolha o relógio na lista' });
     const device = await this.ble.requestDevice({
@@ -88,7 +101,29 @@ export class Session extends EventTarget {
       await this.recorder.add({ type: 'erro', note: `leitura 2A19: ${e.message}` });
     }
     this.#setInfo('aparelho', `${device.name || '?'} (${device.id})`);
+    await this.#handshake();
+    if (!this.device) throw new Error('o relógio desconectou logo depois de conectar');
     this.#emit('connection', { connected: true, device });
+  }
+
+  /**
+   * O TF37 Pro derruba a conexão (status 19) se nenhum comando chegar em ~11 s depois
+   * de conectar; depois do primeiro comando ele aceita minutos sem tráfego. Por isso,
+   * logo ao conectar, o app pede duas leituras (recursos 00/00 e bateria 11/00),
+   * as mesmas do botão "Ler tudo", já confirmadas no relógio real.
+   */
+  async #handshake() {
+    const reads = [[0x00, 0x00, '00/00 recursos', 'Recursos do relógio'], [0x11, 0x00, '11/00 bateria', 'Bateria']];
+    for (const [cmd, key, what, label] of reads) {
+      if (!this.device) return;
+      try {
+        const reply = this.waitFor((f) => f.kind === 'DF' && f.cmd === cmd && f.key === key, 3000);
+        await this.#write(buildFrame(cmd, key, [0x00], this.version), `${label} (ao conectar)`);
+        if (!(await reply)) await this.recorder.add({ type: 'evento', note: `ao conectar: sem resposta a ${what} em 3 s` });
+      } catch (e) {
+        await this.recorder.add({ type: 'erro', note: `ao conectar (${what}): ${e.message}` });
+      }
+    }
   }
 
   /** O Android falha às vezes com GATT 133 / reason 62; tenta de novo. */

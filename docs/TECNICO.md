@@ -313,3 +313,16 @@ Notas de plataforma:
   documenta a estrutura, nunca um valor real.
 - Código-fonte do firmware não é recuperável; ver [PROXIMOS_PASSOS.md](PROXIMOS_PASSOS.md)
   para os caminhos de firmware (binário) e seus riscos.
+
+## Queda da conexão logo depois de conectar (corrigido)
+
+Sintoma: o app conectava, descobria os serviços e ativava as notificações, mas cerca de 11 a 13 s depois o relógio desconectava (`status 19`, `GATT_CONN_TERMINATE_PEER_USER`, ou seja, foi o relógio que encerrou).
+
+Causa, medida nos 37 registros de sessão: o TF37 Pro encerra a conexão se nenhum comando chegar nos primeiros ~11 s. Depois do primeiro comando ele aceita minutos sem tráfego (houve sessões com mais de 500 s parado no fim). Antes isso não aparecia porque a suíte ou o "Ler tudo" começavam 3 s depois de conectar.
+
+Correção em `core/session.js`:
+
+- Logo ao conectar, o app pede recursos (`DF 00/00`) e bateria (`DF 11/00`). São as mesmas leituras do "Ler tudo", já confirmadas no relógio real. Cada uma espera até 3 s pela resposta e, sem resposta, só registra o fato.
+- Só uma conexão por vez. Antes, dois toques em "Conectar" abriam duas conexões em paralelo, que disputavam o relógio e caíam em `GATT 133`. O botão também fica desativado enquanto conecta.
+
+Teste: `core/test/session.test.js`, com um Bluetooth simulado. No relógio real, a conexão ficou estável por mais de 40 s sem tráfego depois do handshake.
