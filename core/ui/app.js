@@ -6,6 +6,7 @@ import { Recorder } from '../recorder.js';
 import { buildPlan, runSuite, reportMarkdown } from '../suite.js';
 import { hex } from '../protocol.js';
 import { createMeasure } from './measure.js';
+import { mountProfile } from './profile.js';
 
 const GROUPS = {
   leitura: 'Leituras',
@@ -91,6 +92,7 @@ export function mountApp({ root, ble, store, platform, commands, responses, extr
             <dl class="facts" id="facts"><dt>—</dt><dd>Conecte e toque em "Ler tudo".</dd></dl>
             <div class="actions" style="margin-top:12px"><button class="btn watch" id="readAll" disabled>Ler tudo</button></div>
           </div>
+          <div class="block" id="profileBlock"></div>
           <div class="block">
             <h2>Recursos declarados</h2>
             <div class="chips" id="features"><span class="chip static">aparecem depois de ler os recursos</span></div>
@@ -155,6 +157,7 @@ export function mountApp({ root, ble, store, platform, commands, responses, extr
   const recorder = new Recorder(store, (e) => renderEntry(e));
   const session = new Session({ ble, recorder, responses });
   const measure = createMeasure({ root: $('#measureView'), session, commands, recorder });
+  mountProfile($('#profileBlock'), { session, commands, recorder });
 
   function entryCategory(e) {
     if (e.type === 'teste' || e.type === 'suite') return 'testes';

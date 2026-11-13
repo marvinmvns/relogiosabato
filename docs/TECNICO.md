@@ -401,3 +401,7 @@ Seguindo o fluxo do app oficial (`view/MeasurementBtnView`): tocar num canal abr
 Medido no celular (Android) pela interface nova: FC 88 bpm, pressão 105/75 (normal), estresse 63 (médio); oxigênio, temperatura e HRV avisam que o sensor não existe. Suíte com configurações depois das mudanças: 231 itens, 188 passaram, 13 pulados (pessoais), 30 bloqueados, 0 falhas.
 
 Desktop no Linux: o BlueZ às vezes leva mais de 11 s para resolver os serviços do relógio, e o relógio derruba a conexão por falta de comando nesse prazo (visto em 13/11 depois de várias reconexões seguidas). A conexão agora repete a preparação inteira até 3 vezes; se ainda assim falhar, desligar e ligar o Bluetooth do PC costuma resolver.
+
+## Seu perfil (aba Relógio)
+
+Sexo, nascimento, altura, peso, nome e metas, gravados no relógio com 02/04 (perfil), 02/20 (nome), 02/05 (passos), 02/2C (calorias) e 02/2D (distância), conferindo o ACK de cada um. O relógio usa o perfil para estimar distância (passos × passada) e calorias; nos dados reais a passada ficou em ~0,75 m (93 passos = 70 m). Como o relógio não deixa ler o perfil de volta, o app guarda no aparelho o que foi gravado. O app mostra a idade, o IMC (faixas da OMS) e a passada estimada (41,5% da altura no masculino, 41,3% no feminino, regra prática). Medições começadas no menu do relógio agora ficam marcadas no registro (`origem: relogio`).

@@ -624,3 +624,12 @@ input, textarea, select { min-width: 0; max-width: 100%; }
 .daychart .pt[data-tone] { stroke: var(--surface); }
 #mDayStats { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; border: 1px solid var(--line); border-radius: var(--radius-s); overflow: hidden; }
 #mDayStats div { padding: 8px 10px; }
+
+/* ---------- Seu perfil ---------- */
+.profile { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px 12px; margin: 6px 0 12px; }
+.profile label { display: grid; gap: 4px; font-size: .78rem; font-weight: 600; color: var(--ink-2); }
+.profile input, .profile select { font: 600 1rem var(--font); color: var(--ink); background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: var(--radius-s); padding: 9px 10px; min-width: 0; width: 100%; }
+.profile input:focus-visible, .profile select:focus-visible { outline: 2px solid var(--watch); outline-offset: 1px; }
+.pf-derived { margin: 0 0 12px; border: 1px solid var(--line); border-radius: var(--radius-s); overflow: hidden; }
+.profile label:first-child { grid-column: 1 / -1; }

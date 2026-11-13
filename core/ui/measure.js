@@ -250,6 +250,7 @@ export function createMeasure({ root, session, recorder, commands = [] }) {
     st.result = null;
     st.failed = false;
     ticking(true);
+    recorder.add({ type: 'medicao', origem: 'relogio', note: `início no menu do relógio: ${m.label}` });
     openSheet(id);
     renderChannels();
   }
@@ -280,6 +281,7 @@ export function createMeasure({ root, session, recorder, commands = [] }) {
     st.result = r;
     st.failed = false;
     if (fromWatch) {
+      recorder.add({ type: 'medicao', origem: 'relogio', note: `resultado de medição feita no relógio: ${byId(id).label} ${r.text} às ${r.time}` });
       st.external = null;
       ticking(false);
       if (st.sheetFor !== id) openSheet(id);
