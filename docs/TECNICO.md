@@ -322,7 +322,7 @@ Causa, medida nos 37 registros de sessão: o TF37 Pro encerra a conexão se nenh
 
 Correção em `core/session.js`:
 
-- Logo ao conectar, o app pede recursos (`DF 00/00`) e bateria (`DF 11/00`). São as mesmas leituras do "Ler tudo", já confirmadas no relógio real. Cada uma espera até 3 s pela resposta e, sem resposta, só registra o fato.
+- Logo ao conectar, o app manda as leituras do app oficial (ver a seção seguinte). Cada uma espera até 3 s pela resposta e, sem resposta, só registra o fato.
 - Só uma conexão por vez. Antes, dois toques em "Conectar" abriam duas conexões em paralelo, que disputavam o relógio e caíam em `GATT 133`. O botão também fica desativado enquanto conecta.
 
 Teste: `core/test/session.test.js`, com um Bluetooth simulado. No relógio real, a conexão ficou estável por mais de 40 s sem tráfego depois do handshake.
@@ -336,3 +336,21 @@ Medição real no TF37 Pro (`DF 06/04` com payload `01`):
 3. `03/0F = 00` (parado). Às vezes chega um segundo `03/00` ~3 s depois, por exemplo com 79 bpm.
 
 O relógio não manda `03/2A` (valor ao vivo), que o app esperava. Por isso a aba Medir ficava em "…" até o tempo esgotar, embora o valor aparecesse no Histórico. Agora o `03/00` que chega durante a medição, ou até 15 s depois dela, conta como leitura. Medido assim no relógio real: 85 bpm.
+
+## Conexão igual à do app oficial
+
+Fonte: `MBleManager`, `BaseReconnectBlueActivity` e `MainActivity` do Podsfine 1.2.3, que usa a biblioteca `blessed` (`com.welie.blessed`).
+
+| Etapa | Podsfine | Relógio Sabatinho (`core/session.js`) |
+|---|---|---|
+| Conexão | `connectPeripheral`, TRANSPORT_LE, sem autoConnect | `BleClient.connect` (igual por baixo), até 4 tentativas em caso de GATT 133 |
+| MTU | pede 247 depois de descobrir os serviços | o plugin pede 512 e o Android negocia o máximo; os quadros não dependem disso |
+| Notificações | ativa 2AAC 1 s depois de descobrir os serviços | igual (1 s) |
+| Primeiros comandos | 1 s depois das notificações: `14/00` (01), `00/00` (00), `F3/00` | igual; os três já confirmados no relógio real |
+| Depois | vínculo `08/xx`, hora e sincronização | não: `08/xx` é bloqueado no app |
+| Queda | espera 10 s e reconecta; falhou, tenta de novo em 3 s, sem limite | igual, alternando conexão direta e busca do anúncio antes (Android 8+ no app oficial) |
+| Exceções | não reconecta se o usuário desvinculou | não reconecta se o usuário tocou em "Desconectar" ou se a bateria está abaixo de 15% (regra do projeto) |
+
+O app oficial não tem keepalive: depois dos primeiros comandos, o relógio aceita a conexão parada. O tráfego periódico dele (`01/01`, dados do dia) existe para sincronizar passos, não para manter o link.
+
+Validação no relógio real (13/11, 22:29): conexão na primeira tentativa, estável sem tráfego por 60 s, e suíte completa sem queda: 210 itens, 94 passaram, 86 pulados (configuração e payloads ainda não codificados), 30 bloqueados (OTA, fábrica e vínculo), 0 sem resposta.

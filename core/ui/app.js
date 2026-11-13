@@ -307,7 +307,7 @@ export function mountApp({ root, ble, store, platform, commands, responses, extr
   });
 
   $('#connect').onclick = async () => {
-    if (session.connecting) return;
+    if (session.connecting) { setStatus('Já estou conectando; aguarde.'); return; }
     $('#connect').disabled = true;
     setStatus('Preparando o Bluetooth.');
     $('#pill').dataset.state = 'busy';

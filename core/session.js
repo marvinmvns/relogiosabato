@@ -20,9 +20,19 @@ export const OTA_NOTIFY = '00001107-0000-1000-8000-00805f9b34fb';
 const cmdKey = (c, k) => `${c.toString(16).padStart(2, '0')}/${k.toString(16).padStart(2, '0')}`.toUpperCase();
 export { cmdKey };
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Tempos do app oficial (ms). minBattery: abaixo disso não reconecta sozinho (regra do projeto). */
+export const TIMING = {
+  notifyDelay: 1000, handshakeDelay: 1000,
+  reconnectAfterDrop: 10000, reconnectAfterFail: 3000, reconnectScanMs: 5000,
+  autoReconnect: true, minBattery: 15,
+};
+
 export class Session extends EventTarget {
-  constructor({ ble, recorder, responses = [] }) {
+  constructor({ ble, recorder, responses = [], timing = {} }) {
     super();
+    this.timing = { ...TIMING, ...timing };
     this.ble = ble;
     this.recorder = recorder;
     this.responses = new Map(responses.map((r) => [`${r.cmd}/${r.key}`, r]));
@@ -48,41 +58,58 @@ export class Session extends EventTarget {
     this.#emit('info', { key, value });
   }
 
+  /**
+   * Conecta escolhendo o relógio na lista do sistema. A lógica de conexão segue o app
+   * oficial (Podsfine 1.2.3, MBleManager + BaseReconnectBlueActivity + MainActivity):
+   *   1. conecta e descobre os serviços;
+   *   2. espera 1 s e ativa as notificações em 2AAC;
+   *   3. espera 1 s e pede 14/00 (produto), 00/00 (recursos) e F3/00 (identidade);
+   *   4. se a conexão cair sem o usuário pedir, reconecta sozinho: 10 s depois da queda
+   *      e 3 s depois de cada tentativa que falhar, alternando conexão direta e busca.
+   * O passo seguinte do app oficial (vínculo 08/xx) fica de fora: é bloqueado aqui.
+   */
   async connect(opts = {}) {
     // Dois toques em "Conectar" abriam duas conexões em paralelo, que brigavam pelo
     // mesmo relógio (GATT 133). Uma de cada vez.
     if (this.connecting) throw new Error('já está conectando; aguarde');
     if (this.device) return;
+    this.#cancelReconnect();
     this.connecting = true;
     try {
-      await this.#connect(opts);
+      await this.ble.initialize();
+      this.#emit('status', { text: 'Escolha o relógio na lista' });
+      const device = await this.ble.requestDevice({
+        namePrefix: opts.any ? undefined : 'TF37',
+        optionalServices: [UUID.service, UUID.batteryService, UUID.otaService],
+      });
+      this.lastDevice = device;
+      this.autoReconnect = this.timing.autoReconnect;
+      try {
+        await this.#open(device, 4);
+      } catch (e) {
+        if (this.device) { try { await this.ble.disconnect(device.id); } catch (_e) { /* já caiu */ } this.device = null; }
+        throw e;
+      }
     } finally {
       this.connecting = false;
     }
   }
 
-  async #connect({ any = false } = {}) {
-    await this.ble.initialize();
-    this.#emit('status', { text: 'Escolha o relógio na lista' });
-    const device = await this.ble.requestDevice({
-      namePrefix: any ? undefined : 'TF37',
-      optionalServices: [UUID.service, UUID.batteryService, UUID.otaService],
-    });
+  async #open(device, attempts) {
     await this.recorder.add({ type: 'evento', note: `conectando a ${device.name || '?'} ${device.id}` });
     this.#emit('status', { text: `Conectando a ${device.name || device.id}` });
-    await this.#connectWithRetry(device.id);
+    await this.#connectWithRetry(device.id, attempts);
     this.device = device;
     this.reasm.reset();
     this.version = 0;
 
     const services = await this.ble.getServices(device.id);
     this.services = services;
-    await this.recorder.add({
-      type: 'gatt',
-      summary: `${services.length} serviços`,
-      services,
-    });
+    await this.recorder.add({ type: 'gatt', summary: `${services.length} serviços`, services });
 
+    // Podsfine: onServicesDiscovered -> postDelayed(setNotify 2AAC, 1000 ms).
+    await sleep(this.timing.notifyDelay);
+    this.#alive();
     await this.ble.startNotifications(device.id, UUID.service, UUID.notify, (b) => this.#onWatchData(b));
     await this.recorder.add({ type: 'evento', note: 'notificações ativas em 2AAC (comandos)' });
     await this.#subscribeOptional(UUID.batteryService, UUID.batteryLevel, '2A19', (b) => {
@@ -101,24 +128,34 @@ export class Session extends EventTarget {
       await this.recorder.add({ type: 'erro', note: `leitura 2A19: ${e.message}` });
     }
     this.#setInfo('aparelho', `${device.name || '?'} (${device.id})`);
+    // Podsfine: onNotifySuccess -> postDelayed(getProductId, getDeviceFeatures, getDeviceInfo; 1000 ms).
+    await sleep(this.timing.handshakeDelay);
     await this.#handshake();
     if (!this.device) throw new Error('o relógio desconectou logo depois de conectar');
+    this.reconnectTry = 0;
     this.#emit('connection', { connected: true, device });
   }
 
+  #alive() {
+    if (!this.device) throw new Error('o relógio desconectou durante a conexão');
+  }
+
   /**
-   * O TF37 Pro derruba a conexão (status 19) se nenhum comando chegar em ~11 s depois
-   * de conectar; depois do primeiro comando ele aceita minutos sem tráfego. Por isso,
-   * logo ao conectar, o app pede duas leituras (recursos 00/00 e bateria 11/00),
-   * as mesmas do botão "Ler tudo", já confirmadas no relógio real.
+   * As três leituras que o app oficial manda logo depois de ativar as notificações
+   * (MainActivity.onNotifySuccess), todas já confirmadas no relógio real. Também evitam
+   * que o TF37 Pro derrube a conexão: sem nenhum comando em ~11 s ele desconecta (status 19).
    */
   async #handshake() {
-    const reads = [[0x00, 0x00, '00/00 recursos', 'Recursos do relógio'], [0x11, 0x00, '11/00 bateria', 'Bateria']];
-    for (const [cmd, key, what, label] of reads) {
+    const reads = [
+      [0x14, 0x00, [0x01], '14/00 produto', 'ID do produto'],
+      [0x00, 0x00, [0x00], '00/00 recursos', 'Recursos do relógio'],
+      [0xf3, 0x00, [], 'F3/00 identidade', 'Identidade do relógio'],
+    ];
+    for (const [cmd, key, payload, what, label] of reads) {
       if (!this.device) return;
       try {
-        const reply = this.waitFor((f) => f.kind === 'DF' && f.cmd === cmd && f.key === key, 3000);
-        await this.#write(buildFrame(cmd, key, [0x00], this.version), `${label} (ao conectar)`);
+        const reply = this.waitFor((f) => f.cmd === cmd && f.key === key, 3000);
+        await this.#write(buildFrame(cmd, key, payload, this.version), `${label} (ao conectar)`);
         if (!(await reply)) await this.recorder.add({ type: 'evento', note: `ao conectar: sem resposta a ${what} em 3 s` });
       } catch (e) {
         await this.recorder.add({ type: 'erro', note: `ao conectar (${what}): ${e.message}` });
@@ -138,7 +175,7 @@ export class Session extends EventTarget {
         try { await this.ble.disconnect(id); } catch (_e) { /* já desconectado */ }
         if (i === attempts) throw e;
         this.#emit('status', { text: `Falhou (${e.message}). Tentando de novo, ${i + 1} de ${attempts}` });
-        await new Promise((r) => setTimeout(r, 1500 * i));
+        await sleep(1500 * i);
       }
     }
   }
@@ -157,14 +194,80 @@ export class Session extends EventTarget {
     this.device = null;
     this.recorder.add({ type: 'evento', note: `desconectado (${id})` });
     this.#emit('connection', { connected: false });
+    if (!this.connecting) this.#scheduleReconnect(this.timing.reconnectAfterDrop);
   }
 
+  // ---------- reconexão automática (BaseReconnectBlueActivity) ----------
+
+  get reconnecting() {
+    return Boolean(this.reconnectTimer) || Boolean(this.reconnectBusy);
+  }
+
+  #batteryLow() {
+    const pct = parseInt(this.info.bateria2a19 ?? this.info.bateria, 10);
+    return Number.isFinite(pct) && pct < this.timing.minBattery;
+  }
+
+  #scheduleReconnect(ms) {
+    if (!this.autoReconnect || !this.lastDevice || this.device) return;
+    if (this.#batteryLow()) {
+      this.recorder.add({ type: 'evento', note: `reconexão automática suspensa: bateria abaixo de ${this.timing.minBattery}%` });
+      this.#emit('status', { text: 'Bateria baixa: não vou reconectar sozinho. Toque em "Conectar".' });
+      return;
+    }
+    this.#cancelReconnect();
+    this.#emit('status', { text: `Relógio desconectado. Reconectando em ${Math.round(ms / 1000)} s.` });
+    this.reconnectTimer = setTimeout(() => { this.reconnectTimer = null; this.#reconnect(); }, ms);
+  }
+
+  #cancelReconnect() {
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
+  }
+
+  async #reconnect() {
+    if (this.device || this.connecting || !this.autoReconnect) return;
+    this.reconnectTry = (this.reconnectTry || 0) + 1;
+    const n = this.reconnectTry;
+    const device = this.lastDevice;
+    this.connecting = true;
+    this.reconnectBusy = true;
+    try {
+      // Podsfine (Android 8+): tentativas pares conectam direto; ímpares buscam o
+      // anúncio do relógio antes, o que ajuda o Android a achar o aparelho de novo.
+      if (n % 2 === 0 && this.ble.scan) {
+        this.#emit('status', { text: `Procurando o relógio (reconexão ${n})` });
+        let seen = false;
+        try {
+          await this.ble.scan({ namePrefix: 'TF37' }, (r) => { if (r.id === device.id) seen = true; }, this.timing.reconnectScanMs);
+        } catch (_e) { /* sem busca nesta plataforma: conecta direto */ seen = true; }
+        if (!seen) throw new Error('o relógio não apareceu na busca');
+      }
+      await this.recorder.add({ type: 'evento', note: `reconexão automática ${n}` });
+      await this.#open(device, 1);
+      await this.recorder.add({ type: 'evento', note: `reconectado na tentativa ${n}` });
+    } catch (e) {
+      await this.recorder.add({ type: 'erro', note: `reconexão ${n} falhou: ${e.message}` });
+      if (this.device) { try { await this.ble.disconnect(device.id); } catch (_e) { /* já caiu */ } this.device = null; }
+      this.connecting = false;
+      this.reconnectBusy = false;
+      this.#scheduleReconnect(this.timing.reconnectAfterFail);
+      return;
+    }
+    this.connecting = false;
+    this.reconnectBusy = false;
+  }
+
+  /** Desconecta a pedido do usuário: não reconecta sozinho depois. */
   async disconnect() {
+    this.autoReconnect = false;
+    this.#cancelReconnect();
     if (this.device) {
       const { id } = this.device;
       await this.ble.disconnect(id);
       this.#onDisconnect(id);
     }
+    this.#emit('status', { text: 'Desconectado. A reconexão automática fica desligada até você tocar em "Conectar".' });
   }
 
   async scan(ms = 10000) {
