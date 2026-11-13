@@ -3,7 +3,7 @@
 // Cada medição interpretada também vai para o registro (type: 'medicao').
 import {
   decodeToday, decodeHourly, decodeHrHistory, decodeLive, decodeStatus, stats, MEASUREMENTS, measureCommand,
-  RESULT_KEYS, RESULT_DECODERS,
+  RESULT_KEYS, RESULT_DECODERS, STATUS_TO_ID,
 } from '../measure.js';
 
 const AUTO_STOP_S = 60;
@@ -76,21 +76,51 @@ export function createMeasure({ root, session, recorder }) {
   // O TF37 Pro não manda 03/2A: mede uns 10 a 30 s e entrega o resultado como um registro
   // do histórico (03/00 FC, 03/01 pressão, 03/07 estresse...), às vezes repetido ~3 s depois.
   // Registros que chegam durante a medição (ou até 15 s depois dela) contam como leitura.
+  // Medição iniciada no menu do próprio relógio: o estado (03/0F, 03/15, 03/29...) chega
+  // sem o app ter pedido, e o resultado vem no mesmo quadro de histórico.
+  function showMeasure(m) {
+    $('#mBpm').closest('.block').querySelector('h2').textContent = m.label;
+    $('#mBpmUnit').textContent = m.unit;
+  }
+  function watchStarted(id) {
+    if (st.measuring || st.external?.id === id) return;
+    const m = MEASUREMENTS.find((x) => x.id === id);
+    if (!m) return;
+    st.external = m;
+    st.series = [];
+    st.startedAt = Date.now();
+    showMeasure(m);
+    $('#mBpm').textContent = '…';
+    $('#mState').textContent = 'medindo no relógio';
+    drawSpark();
+    showStats();
+  }
+
   function takeResult(id, h) {
-    const m = st.measuring || (Date.now() - st.stoppedAt < 15000 ? st.last : null);
-    if (!m || m.id !== id || !h.records.length) return null;
+    if (!h.records.length) return null;
     const r = h.records[h.records.length - 1];
     const now = new Date();
     const nowS = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-    const sinceStart = (Date.now() - st.startedAt) / 1000;
+    const appM = st.measuring || (Date.now() - st.stoppedAt < 15000 ? st.last : null);
+    const fromApp = appM?.id === id;
+    const fromWatch = !fromApp && (st.external?.id === id || Math.abs(r.seconds - nowS) <= 180);
+    if (!fromApp && !fromWatch) return null;
+    const sinceStart = fromApp ? (Date.now() - st.startedAt) / 1000 : 180;
     // Folga de 10 min para o relógio fora de hora; um registro mais velho é do histórico, não desta medição.
     if (Math.abs(r.seconds - nowS) > sinceStart + 600) return null;
+    if (fromWatch) {
+      const m = MEASUREMENTS.find((x) => x.id === id);
+      if (st.external?.id !== id) { st.series = []; st.startedAt = Date.now(); }
+      st.external = null;
+      showMeasure(m);
+      $('#mState').textContent = `medido no relógio às ${r.time}`;
+    }
     if (st.series.some((x) => x.seconds === r.seconds)) return null;
     st.series.push({ t: Date.now() - st.startedAt, value: r.value ?? r.bpm, seconds: r.seconds });
     $('#mBpm').textContent = r.text ?? String(r.bpm);
     $('#mBpm').dataset.v = '1';
-    if (!st.measuring) $('#mState').textContent = 'concluído (o relógio terminou)';
-    else stop('o relógio entregou o resultado');
+    if (fromApp && !st.measuring) $('#mState').textContent = 'concluído (o relógio terminou)';
+    else if (fromApp) stop('o relógio entregou o resultado');
     drawSpark();
     showStats();
     return r;
@@ -181,6 +211,11 @@ export function createMeasure({ root, session, recorder }) {
       const status = decodeStatus(f.key, p);
       if (status) {
         if (st.measuring) $('#mState').textContent = status.text;
+        else if (status.status === 1) watchStarted(STATUS_TO_ID[f.key]);
+        else if (st.external && STATUS_TO_ID[f.key] === st.external.id) {
+          $('#mState').textContent = status.failed ? 'o relógio não conseguiu medir' : 'parado no relógio; aguardando o resultado';
+          if (status.failed) st.external = null;
+        }
         await recorder.add({ type: 'medicao', note: `${status.what}: ${status.text}`, estado: status });
         if (status.failed && st.measuring) stop('o relógio não conseguiu medir; coloque no pulso e tente de novo');
         else if (status.status === 0 && st.measuring && st.series.length) stop('o relógio terminou');

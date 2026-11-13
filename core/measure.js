@@ -117,6 +117,8 @@ export function decodeLive(p) {
 /** 03/0F (FC), 03/12 (SpO2), 03/15 (pressão), 03/29 (estresse): estado da medição.
  *  0 parado, 1 medindo, 2 falhou (o Podsfine mostra "tentar de novo"; MeasurementBtnView). */
 export const MEASURE_STATUS_KEYS = { 0x0f: 'frequência cardíaca', 0x12: 'oxigênio no sangue', 0x15: 'pressão arterial', 0x29: 'estresse', 0x31: 'temperatura' };
+/** Qual medição cada quadro de estado acompanha (para medições iniciadas no próprio relógio). */
+export const STATUS_TO_ID = { 0x0f: 'hr', 0x12: 'spo2', 0x15: 'bp', 0x29: 'stress', 0x31: 'temp' };
 
 export function decodeStatus(key, p) {
   if (!(key in MEASURE_STATUS_KEYS) || p.length < 1) return null;
