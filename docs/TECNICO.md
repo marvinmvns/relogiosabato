@@ -326,3 +326,13 @@ Correção em `core/session.js`:
 - Só uma conexão por vez. Antes, dois toques em "Conectar" abriam duas conexões em paralelo, que disputavam o relógio e caíam em `GATT 133`. O botão também fica desativado enquanto conecta.
 
 Teste: `core/test/session.test.js`, com um Bluetooth simulado. No relógio real, a conexão ficou estável por mais de 40 s sem tráfego depois do handshake.
+
+## Frequência cardíaca: o resultado vem em 03/00, não em 03/2A (corrigido)
+
+Medição real no TF37 Pro (`DF 06/04` com payload `01`):
+
+1. `03/0F = 01` (medindo), repetido a cada ~5 s.
+2. Depois de ~10 s, `03/00` com um registro: data, quantidade 1, segundos do dia, bpm no último byte. Exemplo: `35 6c 00 01 00 01 2e 63 00 00 00 50` = 2026-11-12, 21:30:11, 80 bpm.
+3. `03/0F = 00` (parado). Às vezes chega um segundo `03/00` ~3 s depois, por exemplo com 79 bpm.
+
+O relógio não manda `03/2A` (valor ao vivo), que o app esperava. Por isso a aba Medir ficava em "…" até o tempo esgotar, embora o valor aparecesse no Histórico. Agora o `03/00` que chega durante a medição, ou até 15 s depois dela, conta como leitura. Medido assim no relógio real: 85 bpm.

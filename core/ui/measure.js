@@ -15,7 +15,7 @@ const TODAY_CMD = {
 };
 
 export function createMeasure({ root, session, recorder }) {
-  const st = { measuring: null, series: [], timer: null, startedAt: 0, connected: false };
+  const st = { measuring: null, series: [], timer: null, startedAt: 0, stoppedAt: 0, last: null, connected: false };
 
   root.innerHTML = `
     <div class="block">
@@ -36,7 +36,7 @@ export function createMeasure({ root, session, recorder }) {
         <button class="btn watch" id="mStart" disabled>Medir agora</button>
         <button class="btn quiet" id="mStop" disabled>Parar</button>
       </div>
-      <p class="file">Comando 06/04: payload 1 inicia, 0 para. Valores ao vivo chegam em 03/2A e o resultado em 03/00.</p>
+      <p class="file">Comando 06/04: payload 1 inicia, 0 para. No TF37 Pro o resultado chega em 03/00 depois de uns 10 s; outros modelos mandam valores ao vivo em 03/2A.</p>
     </div>
 
     <div class="block">
@@ -71,6 +71,28 @@ export function createMeasure({ root, session, recorder }) {
     $('#mOthers').appendChild(b);
   }
 
+  // O TF37 Pro não manda 03/2A: mede ~10 s e entrega o resultado como um registro
+  // do histórico (03/00), às vezes seguido de um segundo registro ~3 s depois.
+  // Registros com horário dentro da medição (ou até 15 s depois dela) contam como leitura.
+  function takeHistoryReading(h) {
+    const m = st.measuring || (st.last?.id === 'hr' && Date.now() - st.stoppedAt < 15000 ? st.last : null);
+    if (!m || m.id !== 'hr' || !h.records.length) return null;
+    const r = h.records[h.records.length - 1];
+    const now = new Date();
+    const nowS = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    const sinceStart = (Date.now() - st.startedAt) / 1000;
+    // Folga de 10 min para o relógio fora de hora; um registro mais velho é do histórico, não desta medição.
+    if (Math.abs(r.seconds - nowS) > sinceStart + 600) return null;
+    if (st.series.some((x) => x.seconds === r.seconds)) return null;
+    st.series.push({ t: Date.now() - st.startedAt, value: r.bpm, seconds: r.seconds });
+    $('#mBpm').textContent = String(r.bpm);
+    $('#mBpm').dataset.v = '1';
+    if (!st.measuring) $('#mState').textContent = 'concluído (o relógio terminou)';
+    drawSpark();
+    showStats();
+    return r;
+  }
+
   function setButtons() {
     const on = st.connected;
     $('#mStart').disabled = !on || Boolean(st.measuring);
@@ -100,6 +122,7 @@ export function createMeasure({ root, session, recorder }) {
     st.measuring = m;
     st.series = [];
     st.startedAt = Date.now();
+    st.last = m;
     $('#mBpm').textContent = '…';
     $('#mBpmUnit').textContent = m.unit;
     $('#mState').textContent = `pedindo ${m.label.toLowerCase()}`;
@@ -123,6 +146,7 @@ export function createMeasure({ root, session, recorder }) {
     if (!m) return;
     clearTimeout(st.timer);
     st.measuring = null;
+    st.stoppedAt = Date.now();
     setButtons();
     try { await session.send(measureCommand(m, false)); } catch (_e) { /* desconectado */ }
     const s = stats(st.series.map((x) => x.value));
@@ -160,6 +184,8 @@ export function createMeasure({ root, session, recorder }) {
         const h = decodeHrHistory(p);
         if (!h) return;
         renderHistory(h);
+        const r = takeHistoryReading(h);
+        if (r) await recorder.add({ type: 'medicao', note: `frequência cardíaca: ${r.bpm} bpm (resultado em 03/00)`, valor: { bpm: r.bpm, hora: r.time } });
         await recorder.add({ type: 'medicao', note: `histórico de FC ${h.date}: ${h.records.length} registros`, historico: h });
       }
     } else if (f.cmd === 0x04 && f.key === 0x00) {
